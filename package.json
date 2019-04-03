@@ -1,0 +1,49 @@
+{
+  "name": "nekodb",
+  "version": "0.0.0",
+  "description": "Realtime database with several backends.",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint */**/*.ts",
+    "test": "mocha -r @babel/register -r ts-node/register --watch-extensions ts tests/**/*.spec.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ukatama/nekodb.git"
+  },
+  "keywords": [
+    "realtime",
+    "database"
+  ],
+  "author": "ukatama",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ukatama/nekodb/issues"
+  },
+  "homepage": "https://github.com/ukatama/nekodb#readme",
+  "dependencies": {
+    "eventemitter3": "^3.1.0",
+    "firebase": "^5.9.2",
+    "lodash": "^4.17.11"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
+    "@babel/register": "^7.4.0",
+    "@types/chai": "^4.1.7",
+    "@types/lodash": "^4.14.123",
+    "@types/mocha": "^5.2.6",
+    "@types/node": "^11.13.0",
+    "@types/sinon": "^7.0.11",
+    "@typescript-eslint/eslint-plugin": "^1.6.0",
+    "@typescript-eslint/parser": "^1.6.0",
+    "@typescript-eslint/typescript-estree": "^1.6.0",
+    "chai": "^4.2.0",
+    "eslint": "^5.16.0",
+    "eslint-config-google": "^0.12.0",
+    "mocha": "^6.0.2",
+    "sinon": "^7.3.1",
+    "ts-node": "^8.0.3",
+    "typescript": "^3.4.1"
+  }
+}
