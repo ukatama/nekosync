@@ -45,4 +45,19 @@ export default abstract class Backend {
    * @param {object} value - Value
    */
   public abstract update(path: ItemPath, value: object): Promise<void>;
+
+  /**
+   * Add new item
+   * @param {CollectionPath} path - Path of collection to add
+   * @param {object} value - Value
+   * @return {Promise<string>} - Added id
+   */
+  public abstract add(path: CollectionPath, value: object): Promise<string>;
+
+  /**
+   * Remove item
+   * @param {ItemPath} path - Path for item
+   * @param {object} value - Value
+   */
+  public abstract remove(path: ItemPath): Promise<void>;
 }

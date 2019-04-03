@@ -3,6 +3,7 @@ import EventEmitter from 'events';
 import Backend, {
   ItemPath, Callback, CollectionPath, Unsubscribe,
 } from './Backend';
+import shortid = require('shortid');
 
 type Event = 'value' | 'child_added' | 'child_changed' | 'child_removed'
 
@@ -48,7 +49,7 @@ function getCollectionPath(path: ItemPath): CollectionPath {
  */
 export default class MemoryBackend extends Backend {
   private eventBus = new EventEmitter();
-  private store: { [key: string]: object } = {};
+  private store: { [key: string]: object | undefined } = {};
 
   /**
    * Subscribe single item
@@ -87,18 +88,27 @@ export default class MemoryBackend extends Backend {
     onChanged: Callback,
     onRemoved: Callback,
   ): Promise<Unsubscribe> {
-    const list: [Event, Callback][] = [
+    const pairs: [Event, Callback][] = [
       ['child_added', onAdded],
       ['child_changed', onChanged],
       ['child_removed', onRemoved],
     ];
 
-    list.forEach(([event, callback]) => {
+    pairs.forEach(([event, callback]) => {
       this.eventBus.on(encodeEvent(path, event), callback);
     });
 
+    const encodedPath = encodePath(path);
+    Object.keys(this.store)
+      .forEach((key) => {
+        const match = key.match(new RegExp(`^${encodedPath}/([^/]+)$`));
+        if (!match) return;
+        const value = this.store[key];
+        if (value !== undefined) onAdded(match[1], value);
+      });
+
     return async () => {
-      list.forEach(([event, callback]) => {
+      pairs.forEach(([event, callback]) => {
         this.eventBus.off(encodeEvent(path, event), callback);
       });
     };
@@ -125,6 +135,42 @@ export default class MemoryBackend extends Backend {
       ),
       id,
       newValue,
+    );
+  }
+
+  /**
+   * Add new item
+   * @param {CollectionPath} path - Path of collection to add
+   * @param {object} value - Value
+   * @return {Promise<string>} - Added id
+   */
+  public async add(path: CollectionPath, value: object): Promise<string> {
+    const id = shortid();
+    const itemPath = [
+      ...path.parentPath,
+      {
+        collection: path.collection,
+        id,
+      },
+    ];
+    await this.update(itemPath, value);
+    return id;
+  }
+
+  /**
+   * Remove item
+   * @param {ItemPath} path - Path for item
+   * @param {object} value - Value
+   */
+  public async remove(path: ItemPath): Promise<void> {
+    const id = path[path.length-1].id;
+    const value = this.store[encodePath(path)];
+    delete this.store[encodePath(path)];
+
+    this.eventBus.emit(
+      encodeEvent(getCollectionPath(path), 'child_removed'),
+      id,
+      value,
     );
   }
 }
