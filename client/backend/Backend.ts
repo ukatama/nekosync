@@ -1,5 +1,3 @@
-import Model from '../Model';
-
 export type Unsubscribe = () => Promise<void>;
 export type Callback = (id: string, value: object) => void;
 
