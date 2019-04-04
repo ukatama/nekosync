@@ -1,32 +1,44 @@
 import {assert} from 'chai';
-import Document, {attribute, MissingAttributeError} from '../client/Document';
+import MemoryBackend from '../client/backend/MemoryBackend';
+import Document, {
+  attribute, MissingAttributeError,
+} from '../client/Document';
 
 describe('Document', () => {
-  interface TestAttributes {
+  class TestDocument extends Document<{
     foo: string;
     bar: string;
     baz?: number;
-  }
-
-  class TestDocument extends Document<TestAttributes> {
+  }> {
     @attribute({required: true}) public foo!: string;
     @attribute({required: true}) public bar!: string;
     @attribute() public baz?: number;
   }
 
+  const backend = new MemoryBackend([]);
+  const path = [{collection: 'c1', id: 'i1'}];
   let document: TestDocument;
   it('can initialize', () => {
-    document = new TestDocument('id', {foo: 'foo', bar: 'bar', baz: 0});
+    document = new TestDocument(
+      backend,
+      path,
+      {foo: 'foo', bar: 'bar', baz: 0},
+    );
   });
 
   it('initialized', () => {
+    assert.equal(document.id, 'i1');
     assert.equal(document.foo, 'foo');
     assert.equal(document.bar, 'bar');
     assert.equal(document.baz, 0);
   });
 
   it('can initialize with empty value', () => {
-    document = new TestDocument('id', {foo: 'foofoo', bar: 'barbar'});
+    document = new TestDocument(
+      backend,
+      path,
+      {foo: 'foofoo', bar: 'barbar'},
+    );
   });
 
   it('initialized', () => {
@@ -37,8 +49,8 @@ describe('Document', () => {
 
   it('throws on initializing with missing attribute', () => {
     assert.throws(
-      () => document = new TestDocument('id', {foo: 'foo', baz: 0}),
+      () => document = new TestDocument(backend, path, {foo: 'foo', baz: 0}),
       MissingAttributeError,
     );
-  })
+  });
 });
