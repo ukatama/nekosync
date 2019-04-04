@@ -8,7 +8,7 @@ import {ForbiddenError} from '../../client/backend/BackendError';
 export default function testBackend(backend: Backend) {
   describe('value', () => {
     describe('simple collection', () => {
-      const collection = 'nekodb-test-value-simple-collection';
+      const collection = 'nekord-test-value-simple-collection';
       const id = shortid();
 
       const path = [{collection, id}];
@@ -67,10 +67,10 @@ export default function testBackend(backend: Backend) {
     describe('nested collection', () => {
       const callback = fake();
       let unsubscribe: Unsubscribe;
-      const collection1 = 'nekodb-test-value-nested-collection-1';
+      const collection1 = 'nekord-test-value-nested-collection-1';
       const id1 = shortid();
       const parentPath = [{collection: collection1, id: id1}]
-      const collection2 = 'nekodb-test-value-nested-collection-2';
+      const collection2 = 'nekord-test-value-nested-collection-2';
       const id2 = shortid();
       const itemPath = [
         ...parentPath,
@@ -126,7 +126,7 @@ export default function testBackend(backend: Backend) {
     describe('simple collection', () => {
       const callback = fake();
       let unsubscribe: Unsubscribe;
-      const collection = 'nekodb-test-children-simple-collection';
+      const collection = 'nekord-test-children-simple-collection';
       it('can subscribe', async () => {
         unsubscribe = await backend.subscribeCollection(
           {parentPath: [], collection},
@@ -215,8 +215,8 @@ export default function testBackend(backend: Backend) {
     });
 
     describe('nested collection', () => {
-      const collection1 = 'nekodb-test-children-nested-collection-1';
-      const collection2 = 'nekodb-test-children-nested-collection-2';
+      const collection1 = 'nekord-test-children-nested-collection-1';
+      const collection2 = 'nekord-test-children-nested-collection-2';
       const id4 = shortid();
       const parentPath = [
         {collection: collection1, id: id4},
@@ -325,7 +325,7 @@ export default function testBackend(backend: Backend) {
   });
 
   describe('ForbiddenError', () => {
-    const collection = 'nekodb-test-forbidden-collection';
+    const collection = 'nekord-test-forbidden-collection';
     const id = shortid();
     it('throws in update', () => {
       return assert.isRejected(

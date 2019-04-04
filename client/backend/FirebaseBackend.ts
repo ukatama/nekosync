@@ -4,7 +4,7 @@ import {CollectionPath, DocumentPath} from '../../common/Path';
 import {ForbiddenError} from './BackendError';
 
 // ToDo: Detect document removed event
-const Removed = 'NEKODB_REMOVED';
+const Removed = 'NEKORD_REMOVED';
 
 /**
  * Handle error
