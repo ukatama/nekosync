@@ -1,5 +1,5 @@
-import uniq from 'lodash/uniq';
 import {assert} from 'chai';
+import uniq from 'lodash/uniq';
 import shortid from 'shortid';
 import {fake} from 'sinon';
 import Backend, {Unsubscribe} from '../../client/backend/Backend';

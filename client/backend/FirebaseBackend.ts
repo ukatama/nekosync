@@ -1,6 +1,6 @@
 import {initializeApp, firestore, app, FirebaseError} from 'firebase';
-import Backend, {Callback, Unsubscribe} from './Backend';
 import {CollectionPath, DocumentPath} from '../../common/Path';
+import Backend, {Callback, Unsubscribe} from './Backend';
 import {ForbiddenError} from './BackendError';
 
 // ToDo: Detect document removed event

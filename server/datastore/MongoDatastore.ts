@@ -1,6 +1,7 @@
-import {Collection, Db} from 'mongodb';
 import merge from 'lodash/merge';
 import omit from 'lodash/omit';
+import {Collection, Db} from 'mongodb';
+import shortid from 'shortid';
 import {
   CollectionPath,
   DocumentPath,
@@ -8,7 +9,6 @@ import {
   getCollectionPath,
   getDocumentPath,
 } from '../../common/Path';
-import shortid = require('shortid');
 
 /**
  * Datastore with MongoDB

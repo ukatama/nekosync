@@ -1,5 +1,5 @@
-import Backend, {Unsubscribe} from './backend/Backend';
 import {DocumentPath, getDocumentPath} from '../common/Path';
+import Backend, {Unsubscribe} from './backend/Backend';
 import Document, {AttributesOf, DocumentClassOf} from './Document';
 
 export type UpdateCallback<D> = (document: D) => void;

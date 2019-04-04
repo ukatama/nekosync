@@ -1,10 +1,10 @@
 import {assert} from 'chai';
 import {fake} from 'sinon';
-import Collection from '../client/Collection';
-import Document, {attribute, collection} from '../client/Document';
-import MemoryBackend from '../client/backend/MemoryBackend';
-import rules from './utilities/rules';
-import {Unsubscribe} from '../client/backend/Backend';
+import rules from '../tests/utilities/rules';
+import MemoryBackend from './backend/MemoryBackend';
+import {Unsubscribe} from './backend/Backend';
+import Collection from './Collection';
+import Document, {attribute, collection} from './Document';
 
 describe('Collection', () => {
   class ChildDocument extends Document<{ baz: number }> {

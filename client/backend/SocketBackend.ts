@@ -1,10 +1,10 @@
 import shortid from 'shortid';
-import Backend, {Callback, Unsubscribe} from './Backend';
 import {EventEmitter} from 'events';
+import {DocumentPath, CollectionPath, encodePath} from '../../common/Path';
 import Socket, {
   SocketUpstreamEvent, SocketDownstreamEvent, SocketRequestEvent, SocketErrorCode,
 } from '../../common/Socket';
-import {DocumentPath, CollectionPath, encodePath} from '../../common/Path';
+import Backend, {Callback, Unsubscribe} from './Backend';
 import {ForbiddenError} from './BackendError';
 
 /**

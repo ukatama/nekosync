@@ -1,5 +1,5 @@
-import Backend from './backend/Backend';
 import {DocumentPath, getId} from '../common/Path';
+import Backend from './backend/Backend';
 import Collection from './Collection';
 
 export type AttributesOf<D> = D extends Document<infer A> ? A : never;

@@ -1,6 +1,5 @@
 import merge from 'lodash/merge';
 import EventEmitter from 'events';
-import Backend, {Callback, Unsubscribe} from './Backend';
 import shortid from 'shortid';
 import {
   CollectionPath,
@@ -11,6 +10,7 @@ import {
   getId,
 } from '../../common/Path';
 import Rule, {CompiledRule, compile, authorize} from '../../common/Rule';
+import Backend, {Callback, Unsubscribe} from './Backend';
 import {ForbiddenError} from './BackendError';
 
 /**

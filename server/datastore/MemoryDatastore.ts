@@ -1,9 +1,9 @@
 import merge from 'lodash/merge';
 import shortid from 'shortid';
-import Datastore from './Datastore';
 import {
   DocumentPath, encodePath, getDocumentPath, CollectionPath,
 } from '../../common/Path';
+import Datastore from './Datastore';
 
 /**
  * Datastore using on memory data store

@@ -1,8 +1,8 @@
 import {assert} from 'chai';
-import MemoryBackend from '../client/backend/MemoryBackend';
+import MemoryBackend from './backend/MemoryBackend';
 import Document, {
   attribute, MissingAttributeError,
-} from '../client/Document';
+} from './Document';
 
 describe('Document', () => {
   class TestDocument extends Document<{

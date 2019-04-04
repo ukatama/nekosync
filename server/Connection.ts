@@ -1,11 +1,4 @@
 import {EventEmitter} from 'events';
-import Socket, {
-  SocketDownstreamEvent,
-  SocketErrorCode,
-  SocketRequestEvent,
-  SocketUpstreamEvent,
-} from '../common/Socket';
-import Datastore from './datastore/Datastore';
 import {
   CollectionPath,
   DocumentPath,
@@ -15,6 +8,13 @@ import {
   getId,
 } from '../common/Path';
 import Rule, {CompiledRule, compile, authorize} from '../common/Rule';
+import Socket, {
+  SocketDownstreamEvent,
+  SocketErrorCode,
+  SocketRequestEvent,
+  SocketUpstreamEvent,
+} from '../common/Socket';
+import Datastore from './datastore/Datastore';
 
 /**
  * ConnectionError

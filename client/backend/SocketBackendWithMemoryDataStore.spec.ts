@@ -1,10 +1,10 @@
 import {EventEmitter} from 'events';
-import SocketBackend from '../../client/backend/SocketBackend';
-import testBackend from '../utilities/testBackend';
 import Connection from '../../server/Connection';
 import MemoryDatastore from '../../server/datastore/MemoryDatastore';
-import SocketPair from '../utilities/SocketPair';
-import rules from '../utilities/rules';
+import SocketPair from '../../tests/utilities/SocketPair';
+import rules from '../../tests/utilities/rules';
+import testBackend from '../../tests/utilities/testBackend';
+import SocketBackend from './SocketBackend';
 
 describe('SocketBackend with MemoryDatastore', () => {
   const socketPair = new SocketPair();
