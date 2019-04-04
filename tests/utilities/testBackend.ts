@@ -11,22 +11,23 @@ function getCollectionName(): string {
 export default function testBackend(backend: Backend) {
   describe('value', () => {
     describe('simple collection', () => {
-      const c01 = getCollectionName();
+      const collection = 'nekodb-test-value-simple-collection';
+      const id = shortid();
 
-      const path01 = [{collection: c01, id: 'i01'}];
+      const path = [{collection, id}];
       const callback = fake();
       let unsubscribe: Unsubscribe;
       it('can subscribe', async () => {
-        unsubscribe = await backend.subscribeDocument(path01, callback);
+        unsubscribe = await backend.subscribeDocument(path, callback);
       });
 
       it('can update', async () => {
-        await backend.update(path01, {foo: 'bar'});
+        await backend.update(path, {foo: 'bar'});
       });
 
       it('calls callback', () => {
         assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, ['i01', {foo: 'bar'}]);
+        assert.deepEqual(callback.lastCall.args, [id, {foo: 'bar'}]);
         callback.resetHistory();
       });
 
@@ -35,7 +36,7 @@ export default function testBackend(backend: Backend) {
       });
 
       it('can update', async () => {
-        await backend.update(path01, {foo: 'baz'});
+        await backend.update(path, {foo: 'baz'});
       });
 
       it('does not calls callback', async () => {
@@ -43,22 +44,22 @@ export default function testBackend(backend: Backend) {
       });
 
       it('can subscribe value again', async () => {
-        unsubscribe = await backend.subscribeDocument(path01, callback);
+        unsubscribe = await backend.subscribeDocument(path, callback);
       });
 
       it('calls callback', async () => {
         assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, ['i01', {foo: 'baz'}]);
+        assert.deepEqual(callback.lastCall.args, [id, {foo: 'baz'}]);
         callback.resetHistory();
       });
 
       it('can remove', async () => {
-        await backend.remove(path01);
+        await backend.remove(path);
       });
 
       it('calls callback', async () => {
         assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, ['i01', undefined]);
+        assert.deepEqual(callback.lastCall.args, [id, undefined]);
       });
 
       it('can unsubscribe', async () => {
@@ -69,25 +70,33 @@ export default function testBackend(backend: Backend) {
     describe('nested collection', () => {
       const callback = fake();
       let unsubscribe: Unsubscribe;
-      const c02 = getCollectionName();
+      const collection1 = 'nekodb-test-value-nested-collection-1';
+      const id1 = shortid();
+      const parentPath = [{collection: collection1, id: id1}]
+      const collection2 = 'nekodb-test-value-nested-collection-2';
+      const id2 = shortid();
+      const itemPath = [
+        ...parentPath,
+        {collection: collection2, id: id2},
+      ];
       it('can subscribe', async () => {
         unsubscribe = await backend.subscribeDocument(
-          [{collection: c02, id: 'i01'}, {collection: c02, id: 'i03'}],
+          itemPath,
           callback,
         );
       });
 
       it('can update', async () => {
-        await backend.update([{collection: c02, id: 'i01'}], {foo: 'bar'});
+        await backend.update(parentPath, {foo: 'bar'});
         await backend.update(
-          [{collection: c02, id: 'i01'}, {collection: c02, id: 'i03'}],
+          itemPath,
           {foo: 'baz'},
         );
       });
 
       it('calls callback', async () => {
         assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, ['i03', {foo: 'baz'}]);
+        assert.deepEqual(callback.lastCall.args, [id2, {foo: 'baz'}]);
         callback.resetHistory();
       });
 
@@ -97,16 +106,21 @@ export default function testBackend(backend: Backend) {
 
       it('can subscribe value again', async () => {
         unsubscribe = await backend.subscribeDocument(
-          [{collection: c02, id: 'i01'}, {collection: c02, id: 'i03'}],
+          itemPath,
           callback,
         );
       });
 
       it('calls callback', async () => {
         assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, ['i03', {foo: 'baz'}]);
+        assert.deepEqual(callback.lastCall.args, [id2, {foo: 'baz'}]);
         callback.resetHistory();
         await unsubscribe();
+      });
+
+      it('can remove', async () => {
+        await backend.remove(itemPath);
+        await backend.remove(parentPath);
       });
     });
   });
@@ -115,10 +129,10 @@ export default function testBackend(backend: Backend) {
     describe('simple collection', () => {
       const callback = fake();
       let unsubscribe: Unsubscribe;
-      const c03 = getCollectionName();
+      const collection = 'nekodb-test-children-simple-collection';
       it('can subscribe', async () => {
         unsubscribe = await backend.subscribeCollection(
-          {parentPath: [], collection: c03},
+          {parentPath: [], collection},
           callback,
         );
       });
@@ -126,7 +140,7 @@ export default function testBackend(backend: Backend) {
       let id: string;
       it('can add item', async () => {
         id = await backend.add(
-          {parentPath: [], collection: c03},
+          {parentPath: [], collection},
           {foo: 'bar'},
         );
       });
@@ -138,7 +152,7 @@ export default function testBackend(backend: Backend) {
       });
 
       it('can update item', async () => {
-        await backend.update([{collection: c03, id}], {foo: 'baz'});
+        await backend.update([{collection, id}], {foo: 'baz'});
       });
 
       it('calls callback', () => {
@@ -148,7 +162,7 @@ export default function testBackend(backend: Backend) {
       });
 
       it('can remove item', async () => {
-        await backend.remove([{collection: c03, id}]);
+        await backend.remove([{collection, id}]);
       });
 
       it('calls callback', () => {
@@ -165,22 +179,22 @@ export default function testBackend(backend: Backend) {
       let id3: string;
       it('can add item', async () => {
         id1 = await backend.add(
-          {parentPath: [], collection: c03},
+          {parentPath: [], collection},
           {foo: 'a'},
         );
         id2 = await backend.add(
-          {parentPath: [], collection: c03},
+          {parentPath: [], collection},
           {foo: 'b'},
         );
         id3 = await backend.add(
-          {parentPath: [], collection: c03},
+          {parentPath: [], collection},
           {foo: 'c'},
         );
       });
 
       it('can subscribe again', async () => {
         unsubscribe = await backend.subscribeCollection(
-          {parentPath: [], collection: c03},
+          {parentPath: [], collection},
           callback,
         );
       });
@@ -193,9 +207,9 @@ export default function testBackend(backend: Backend) {
       });
 
       it('can remove', async () => {
-        await backend.remove([{collection: c03, id: id1}]);
-        await backend.remove([{collection: c03, id: id2}]);
-        await backend.remove([{collection: c03, id: id3}]);
+        await backend.remove([{collection, id: id1}]);
+        await backend.remove([{collection, id: id2}]);
+        await backend.remove([{collection, id: id3}]);
       });
 
       it('can unsubscribe', async () => {
@@ -204,17 +218,19 @@ export default function testBackend(backend: Backend) {
     });
 
     describe('nested collection', () => {
-      const c04 = getCollectionName();
-      const c07 = getCollectionName();
+      const collection1 = 'nekodb-test-children-nested-collection-1';
+      const collection2 = 'nekodb-test-children-nested-collection-1';
+      const id4 = shortid();
       const parentPath = [
-        {collection: c04, id: 'i05'},
+        {collection: collection1, id: id4},
       ];
+      const collectionPath = {parentPath, collection: collection2};
       const callback = fake();
       let unsubscribe: Unsubscribe;
       it('can subscribe', async () => {
         await backend.update(parentPath, {bar: 'bar'});
         unsubscribe = await backend.subscribeCollection(
-          {parentPath, collection: c07},
+          collectionPath,
           callback,
         );
       });
@@ -222,7 +238,7 @@ export default function testBackend(backend: Backend) {
       let id: string;
       it('can add item', async () => {
         id = await backend.add(
-          {parentPath, collection: c07},
+          collectionPath,
           {foo: 'bar'},
         );
       });
@@ -235,7 +251,7 @@ export default function testBackend(backend: Backend) {
 
       it('can update item', async () => {
         await backend.update(
-          [...parentPath, {collection: c07, id}],
+          [...parentPath, {collection: collection2, id}],
           {foo: 'baz'},
         );
       });
@@ -247,7 +263,7 @@ export default function testBackend(backend: Backend) {
       });
 
       it('can remove item', async () => {
-        await backend.remove([...parentPath, {collection: c07, id}]);
+        await backend.remove([...parentPath, {collection: collection2, id}]);
       });
 
       it('calls callback', () => {
@@ -265,22 +281,22 @@ export default function testBackend(backend: Backend) {
       let id3: string;
       it('can add item', async () => {
         id1 = await backend.add(
-          {parentPath, collection: c07},
+          collectionPath,
           {foo: 'a'},
         );
         id2 = await backend.add(
-          {parentPath, collection: c07},
+          collectionPath,
           {foo: 'b'},
         );
         id3 = await backend.add(
-          {parentPath, collection: c07},
+          collectionPath,
           {foo: 'c'},
         );
       });
 
       it('can subscribe again', async () => {
         unsubscribe = await backend.subscribeCollection(
-          {parentPath, collection: c07},
+          collectionPath,
           callback,
         );
       });
@@ -293,9 +309,16 @@ export default function testBackend(backend: Backend) {
       });
 
       it('can remove', async () => {
-        await backend.remove([...parentPath, {collection: c07, id: id1}]);
-        await backend.remove([...parentPath, {collection: c07, id: id2}]);
-        await backend.remove([...parentPath, {collection: c07, id: id3}]);
+        await backend.remove(
+          [...parentPath, {collection: collection2, id: id1}],
+        );
+        await backend.remove(
+          [...parentPath, {collection: collection2, id: id2}],
+        );
+        await backend.remove(
+          [...parentPath, {collection: collection2, id: id3}],
+        );
+        await backend.remove(parentPath);
       });
 
       it('can unsubscribe', async () => {
