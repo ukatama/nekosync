@@ -16,7 +16,9 @@ export default abstract class DataStore {
    * @param {CollectionPath} path - Path for collection
    * @return {{ id: string, value: object }[]} value - Values
    */
-  public abstract list(path: CollectionPath): Promise<{ id: string; value: object }[]>;
+  public abstract list(
+    path: CollectionPath,
+  ): Promise<{ id: string; value: object }[]>;
 
   /**
    * Update an document

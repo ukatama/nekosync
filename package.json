@@ -25,6 +25,7 @@
     "eventemitter3": "^3.1.0",
     "firebase": "^5.9.2",
     "lodash": "^4.17.11",
+    "mongodb": "^3.2.2",
     "shortid": "^2.2.14"
   },
   "devDependencies": {
@@ -34,6 +35,7 @@
     "@types/chai": "^4.1.7",
     "@types/lodash": "^4.14.123",
     "@types/mocha": "^5.2.6",
+    "@types/mongodb": "^3.1.22",
     "@types/node": "^11.13.0",
     "@types/shortid": "0.0.29",
     "@types/sinon": "^7.0.11",
