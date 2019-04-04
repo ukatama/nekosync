@@ -15,4 +15,8 @@ describe('SocketBackend with MongoDataStore', async () => {
   new Connection(socketPair.server, dataStore, eventBus);
 
   testBackend(new SocketBackend(socketPair.client));
+
+  after(async () => {
+    await mongoClient.close();
+  });
 });

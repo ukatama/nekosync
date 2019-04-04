@@ -52,7 +52,7 @@ export default abstract class Collection {
     id: string,
     onValue: Callback,
   ): Promise<Unsubscribe> {
-    const unsubscribe = await this.backend.subscribeValue(
+    const unsubscribe = await this.backend.subscribeDocument(
       [{collection: this.name, id}],
       wrapCallback(this.ModelCtor, onValue),
     );
@@ -71,7 +71,7 @@ export default abstract class Collection {
     onChanged: Callback,
     onRemoved: Callback,
   ): Promise<Unsubscribe> {
-    const unsubscribe = await this.backend.subscribeChildren(
+    const unsubscribe = await this.backend.subscribeCollection(
       {parentPath: [], collection: this.name},
       wrapCallback(this.ModelCtor, onAdded),
       wrapCallback(this.ModelCtor, onChanged),

@@ -1,0 +1,22 @@
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /nekodb-test-value-simple-collection/{id} {
+      allow read, write;
+    }
+    match /nekodb-test-value-nested-collection-1/{id} {
+      allow read, write;
+      match /nekodb-test-value-nested-collection-2/{id} {
+        allow read, write;
+      }
+    }
+    match /nekodb-test-children-simple-collection/{id} {
+      allow read, write;
+    }
+    match /nekodb-test-children-nested-collection-1/{document=**} {
+      allow read, write;
+      match /nekodb-children-value-nested-collection-2/{id} {
+        allow read, write;
+      }
+    }
+  }
+}

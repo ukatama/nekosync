@@ -1,0 +1,15 @@
+{
+  "apiKey": "FIREBASE_API?KEY",
+  "authDomain": "FIREBASE_AUTH_DOMAIN",
+  "databaseURL": "FIREBASE_DATABASE_URL",
+  "projectId": "FIREBASE_PROJECT_ID",
+  "storageBucket": "",
+  "messagingSenderId": "FIREBASE_MESSAGEING_SENDER_ID",
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}
