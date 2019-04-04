@@ -1,5 +1,5 @@
-import {initializeApp, firestore, app, FirebaseError} from 'firebase';
-import {CollectionPath, DocumentPath} from '../../common/Path';
+import {initializeApp, firestore, app} from 'firebase';
+import {CollectionPath, DocumentPath, EmptyPathError} from '../../common/Path';
 import Backend, {Callback, Unsubscribe} from './Backend';
 import {ForbiddenError} from './BackendError';
 
@@ -45,7 +45,7 @@ function getDocument(
   firestore: firestore.Firestore,
   path: DocumentPath,
 ): firestore.DocumentReference {
-  if (path.length === 0) throw new Error('path.length must be greater than 0');
+  if (path.length === 0) throw new EmptyPathError();
 
   const [first, ...otherPath] = path;
   const document = firestore.collection(first.collection).doc(first.id);
@@ -116,9 +116,6 @@ export default class FirebaseBackend extends Backend {
 
       const unsubscribe = document.onSnapshot(
         (snapshot) => callback(snapshot.id, filter(snapshot.data())),
-        (error) => {
-          throw error;
-        },
       );
 
       callback(snapshot.id, snapshot.data());
@@ -147,9 +144,6 @@ export default class FirebaseBackend extends Backend {
         (snapshot) => snapshot.forEach(
           (result) => callback(result.id, filter(result.data())),
         ),
-        (error) => {
-          throw error;
-        },
       );
 
       snapshot.forEach((result) => callback(result.id, filter(result.data())));

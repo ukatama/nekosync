@@ -10,12 +10,19 @@ export interface CollectionPath {
 }
 
 /**
+ * EmptyPathError
+ */
+export class EmptyPathError extends Error {
+}
+
+/**
  * Encode path into string
  * @param {DocumentPath | CollectionPath} path - Path to encode
  * @return {string} - Encoded path
  */
 export function encodePath(path: DocumentPath | CollectionPath): string {
   if (Array.isArray(path)) {
+    if (path.length === 0) throw new EmptyPathError();
     return path.map((e) => `${e.collection}/${e.id}`).join('/');
   } else if (path.parentPath.length === 0) return path.collection;
   return `${encodePath(path.parentPath)}/${path.collection}`;
@@ -61,6 +68,7 @@ export function getDocumentPath(
  * @return {string} - Id of document
  */
 export function getId(path: DocumentPath): string {
+  if (path.length === 0) throw new EmptyPathError();
   const {id} = path[path.length - 1];
   return id;
 }

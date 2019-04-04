@@ -4,6 +4,7 @@ import shortid from 'shortid';
 import {fake} from 'sinon';
 import Backend, {Unsubscribe} from '../../client/backend/Backend';
 import {ForbiddenError} from '../../client/backend/BackendError';
+import { EmptyPathError } from '../../common/Path';
 
 export default function testBackend(backend: Backend) {
   describe('value', () => {
@@ -359,6 +360,15 @@ export default function testBackend(backend: Backend) {
       return assert.isRejected(
         backend.subscribeCollection({parentPath: [], collection}, fake()),
         ForbiddenError,
+      );
+    });
+  });
+
+  describe('EmptyPathError', () => {
+    it('throws in update', () => {
+      return assert.isRejected(
+        backend.update([], {foo: 'bar'}),
+        EmptyPathError,
       );
     });
   });
