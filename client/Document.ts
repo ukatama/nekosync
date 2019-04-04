@@ -38,9 +38,9 @@ export function attribute(options: AttributeOptions = {}): PropertyDecorator {
 }
 
 /**
- * Data model
+ * Data Document
  */
-export default class Model<Attributes> {
+export default class Document<Attributes> {
   public id: string;
   private attributes!: {[key: string]: AttributeOptions};
 
