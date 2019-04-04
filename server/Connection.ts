@@ -1,11 +1,33 @@
 import {EventEmitter} from 'events';
 import Socket, {
-  SocketUpstreamEvent, SocketRequestEvent, SocketDownstreamEvent,
+  SocketUpstreamEvent, SocketRequestEvent, SocketDownstreamEvent, SocketErrorCode,
 } from '../common/Socket';
 import DataStore from './dataStore/DataStore';
 import {
-  encodePath, DocumentPath, CollectionPath, getCollectionPath, getId, getDocumentPath,
+  CollectionPath,
+  DocumentPath,
+  encodePath,
+  getCollectionPath,
+  getDocumentPath,
+  getId,
 } from '../common/Path';
+import Rule, {CompiledRule, compile, authorize} from '../common/Rule';
+
+/**
+ * ConnectionError
+ */
+class ConnectionError extends Error {
+  public code: SocketErrorCode;
+
+  /**
+   * Constructor
+   * @param {SocketErrorCode} code - Error code
+   */
+  public constructor(code: SocketErrorCode) {
+    super();
+    this.code = code;
+  }
+}
 
 /**
  * Connection
@@ -14,6 +36,7 @@ export default class Connection {
   private socket: Socket;
   private dataStore: DataStore;
   private eventBus: EventEmitter;
+  private rules: CompiledRule[];
   private subscriptionCounter: { [path: string]: number | undefined } = {};
   private onSnapshot: (
     path: DocumentPath | CollectionPath,
@@ -26,15 +49,18 @@ export default class Connection {
    * @param {Socket} socket - Socket instance
    * @param {DataStore} dataStore - DataStore instance
    * @param {EventEmitter} eventBus - EventBus instance
+   * @param {Rule[]} rules - Rules
    */
   public constructor(
     socket: Socket,
     dataStore: DataStore,
     eventBus: EventEmitter,
+    rules: Rule[],
   ) {
     this.socket = socket;
     this.dataStore = dataStore;
     this.eventBus = eventBus;
+    this.rules = compile(rules);
     this.onSnapshot = (
       path: DocumentPath | CollectionPath,
       id: string,
@@ -59,6 +85,19 @@ export default class Connection {
         }
       },
     );
+  }
+
+  /**
+   * Authorize path by rule
+   * @param {DocumentPath | CollectionPath} path - Path
+   * @param {'read' | 'write'} mode - Mode to access
+   */
+  private async authorize(
+    path: DocumentPath | CollectionPath,
+    mode: 'read' | 'write',
+  ): Promise<void> {
+    const result = await authorize(path, this.rules, mode);
+    if (!result) throw new ConnectionError(SocketErrorCode.Forbidden);
   }
 
   /**
@@ -87,6 +126,7 @@ export default class Connection {
       case SocketRequestEvent.SubscribeDocument:
       case SocketRequestEvent.SubscribeCollection: {
         const [path]: [DocumentPath | CollectionPath] = args;
+        await this.authorize(path, 'read');
         const encodedPath = encodePath(path);
         this.subscriptionCounter[encodedPath]
           = (this.subscriptionCounter[encodedPath] || 0) + 1;
@@ -117,6 +157,7 @@ export default class Connection {
       case SocketRequestEvent.UnsubscribeDocument:
       case SocketRequestEvent.UnsubscribeCollection: {
         const [path]: [DocumentPath | CollectionPath] = args;
+        await this.authorize(path, 'write');
         const encodedPath = encodePath(path);
         const count = this.subscriptionCounter[encodedPath] || 0;
         if (count > 0) {
@@ -129,18 +170,21 @@ export default class Connection {
       }
       case SocketRequestEvent.Update: {
         const [path, value]: [DocumentPath, object] = args;
+        await this.authorize(path, 'write');
         const newValue = await this.dataStore.update(path, value);
         this.emitUpdate(path, newValue);
         return undefined;
       }
       case SocketRequestEvent.Add: {
         const [path, value]: [CollectionPath, object] = args;
+        await this.authorize(path, 'write');
         const id = await this.dataStore.add(path, value);
         this.emitUpdate(getDocumentPath(path, id), value);
         return id;
       }
       case SocketRequestEvent.Remove: {
         const [path]: [DocumentPath] = args;
+        await this.authorize(path, 'write');
         await this.dataStore.remove(path);
         this.emitUpdate(path, undefined);
         return;

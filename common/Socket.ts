@@ -23,3 +23,7 @@ export enum SocketRequestEvent {
   Add = 'Add',
   Remove = 'Remove',
 }
+
+export enum SocketErrorCode {
+  Forbidden,
+}

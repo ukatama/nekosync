@@ -1,12 +1,17 @@
 import merge from 'lodash/merge';
 import EventEmitter from 'events';
 import Backend, {Callback, Unsubscribe} from './Backend';
-import shortid = require('shortid');
+import shortid from 'shortid';
 import {
-  encodePath, getCollectionPath, DocumentPath, CollectionPath, getId,
+  CollectionPath,
+  DocumentPath,
+  encodePath,
+  getCollectionPath,
+  getDocumentPath,
+  getId,
 } from '../../common/Path';
-
-type Event = 'value' | 'child_added' | 'child_changed' | 'child_removed'
+import Rule, {CompiledRule, compile, authorize} from '../../common/Rule';
+import {ForbiddenError} from './BackendError';
 
 /**
  * Backend using in memory store
@@ -14,6 +19,29 @@ type Event = 'value' | 'child_added' | 'child_changed' | 'child_removed'
 export default class MemoryBackend extends Backend {
   private eventBus = new EventEmitter();
   private store: { [key: string]: object | undefined } = {};
+  private rules: CompiledRule[];
+
+  /**
+   * Constructor
+   * @param {Rules} rules - Rules
+   */
+  public constructor(rules: Rule[]) {
+    super();
+    this.rules = compile(rules);
+  }
+
+  /**
+   * Authorize path by rule
+   * @param {DocumentPath | CollectionPath} path - Path
+   * @param {'read' | 'write'} mode - Mode to access
+   */
+  private async authorize(
+    path: DocumentPath | CollectionPath,
+    mode: 'read' | 'write',
+  ): Promise<void> {
+    const result = await authorize(path, this.rules, mode);
+    if (!result) throw new ForbiddenError();
+  }
 
   /**
    * Subscribe single document
@@ -25,6 +53,8 @@ export default class MemoryBackend extends Backend {
     path: DocumentPath,
     callback: Callback,
   ): Promise<Unsubscribe> {
+    await this.authorize(path, 'read');
+
     const encodedPath = encodePath(path);
     this.eventBus.on(encodedPath, callback);
 
@@ -46,6 +76,8 @@ export default class MemoryBackend extends Backend {
     path: CollectionPath,
     callback: Callback,
   ): Promise<Unsubscribe> {
+    await this.authorize(path, 'read');
+
     const encodedPath = encodePath(path);
     this.eventBus.on(encodedPath, callback);
 
@@ -68,6 +100,8 @@ export default class MemoryBackend extends Backend {
    * @param {object} value - Value
    */
   public async update(path: DocumentPath, value: object): Promise<void> {
+    await this.authorize(path, 'write');
+
     const id = getId(path);
     const encodedPath = encodePath(path);
 
@@ -87,6 +121,7 @@ export default class MemoryBackend extends Backend {
    */
   public async add(path: CollectionPath, value: object): Promise<string> {
     const id = shortid();
+    await this.authorize(getDocumentPath(path, id), 'write');
     const documentPath = [
       ...path.parentPath,
       {
@@ -104,6 +139,8 @@ export default class MemoryBackend extends Backend {
    * @param {object} value - Value
    */
   public async remove(path: DocumentPath): Promise<void> {
+    await this.authorize(path, 'write');
+
     const id = path[path.length-1].id;
     const encodedPath = encodePath(path);
     delete this.store[encodedPath];

@@ -1,9 +1,28 @@
-import {initializeApp, firestore, app} from 'firebase';
+import {initializeApp, firestore, app, FirebaseError} from 'firebase';
 import Backend, {Callback, Unsubscribe} from './Backend';
 import {CollectionPath, DocumentPath} from '../../common/Path';
+import {ForbiddenError} from './BackendError';
 
 // ToDo: Detect document removed event
 const Removed = 'NEKODB_REMOVED';
+
+/**
+ * Handle error
+ * @param {Function} block - block
+ * @return {Promise<T>} - Returl value
+ */
+async function handleError<T>(block: () => Promise<T>): Promise<T> {
+  try {
+    const result = await block();
+    return result;
+  } catch (e) {
+    if (e.name === 'FirebaseError' && e.code === 'permission-denied') {
+      throw new ForbiddenError();
+    } else {
+      throw e;
+    }
+  }
+}
 
 /**
  * Filter value
@@ -91,20 +110,22 @@ export default class FirebaseBackend extends Backend {
     path: DocumentPath,
     callback: Callback,
   ): Promise<Unsubscribe> {
-    const document = getDocument(this.firestore, path);
-    const unsubscribe = document.onSnapshot(
-      (snapshot) => callback(snapshot.id, filter(snapshot.data())),
-      (error) => {
-        throw error;
-      },
-    );
+    return await handleError(async () => {
+      const document = getDocument(this.firestore, path);
+      const unsubscribe = document.onSnapshot(
+        (snapshot) => callback(snapshot.id, filter(snapshot.data())),
+        (error) => {
+          throw error;
+        },
+      );
 
-    const snapshot = await document.get();
-    callback(snapshot.id, snapshot.data());
+      const snapshot = await document.get();
+      callback(snapshot.id, snapshot.data());
 
-    return async () => {
-      unsubscribe();
-    };
+      return async () => {
+        unsubscribe();
+      };
+    });
   }
 
   /**
@@ -117,22 +138,24 @@ export default class FirebaseBackend extends Backend {
     path: CollectionPath,
     callback: Callback,
   ): Promise<Unsubscribe> {
-    const collection = getCollection(this.firestore, path);
-    const unsubscribe = collection.onSnapshot(
-      (snapshot) => snapshot.forEach(
-        (result) => callback(result.id, filter(result.data())),
-      ),
-      (error) => {
-        throw error;
-      },
-    );
+    return await handleError(async () => {
+      const collection = getCollection(this.firestore, path);
+      const unsubscribe = collection.onSnapshot(
+        (snapshot) => snapshot.forEach(
+          (result) => callback(result.id, filter(result.data())),
+        ),
+        (error) => {
+          throw error;
+        },
+      );
 
-    const snapshot = await collection.get();
-    snapshot.forEach((result) => callback(result.id, filter(result.data())));
+      const snapshot = await collection.get();
+      snapshot.forEach((result) => callback(result.id, filter(result.data())));
 
-    return async () => {
-      unsubscribe();
-    };
+      return async () => {
+        unsubscribe();
+      };
+    });
   }
 
   /**
@@ -141,9 +164,11 @@ export default class FirebaseBackend extends Backend {
    * @param {object} value - Value
    */
   public async update(path: DocumentPath, value: object): Promise<void> {
-    const document = getDocument(this.firestore, path);
-    await document.set(value, {
-      merge: true,
+    await handleError(async () => {
+      const document = getDocument(this.firestore, path);
+      await document.set(value, {
+        merge: true,
+      });
     });
   }
 
@@ -154,9 +179,11 @@ export default class FirebaseBackend extends Backend {
    * @return {Promise<string>} - Added id
    */
   public async add(path: CollectionPath, value: object): Promise<string> {
-    const collection = getCollection(this.firestore, path);
-    const ref = await collection.add(value);
-    return ref.id;
+    return await handleError(async () => {
+      const collection = getCollection(this.firestore, path);
+      const ref = await collection.add(value);
+      return ref.id;
+    });
   }
 
   /**
@@ -165,8 +192,10 @@ export default class FirebaseBackend extends Backend {
    * @param {object} value - Value
    */
   public async remove(path: DocumentPath): Promise<void> {
-    const document = getDocument(this.firestore, path);
-    await document.set({[Removed]: true});
-    await document.delete();
+    await handleError(async () => {
+      const document = getDocument(this.firestore, path);
+      await document.set({[Removed]: true});
+      await document.delete();
+    });
   }
 }

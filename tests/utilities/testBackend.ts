@@ -1,12 +1,12 @@
 import uniq from 'lodash/uniq';
-import {assert} from 'chai';
+import chai, {assert} from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import shortid from 'shortid';
 import {fake} from 'sinon';
 import Backend, {Unsubscribe} from '../../client/backend/Backend';
+import {ForbiddenError} from '../../client/backend/BackendError';
 
-function getCollectionName(): string {
-  return `test-${Date.now()}-${shortid()}`;
-}
+chai.use(chaiAsPromised);
 
 export default function testBackend(backend: Backend) {
   describe('value', () => {
@@ -219,7 +219,7 @@ export default function testBackend(backend: Backend) {
 
     describe('nested collection', () => {
       const collection1 = 'nekodb-test-children-nested-collection-1';
-      const collection2 = 'nekodb-test-children-nested-collection-1';
+      const collection2 = 'nekodb-test-children-nested-collection-2';
       const id4 = shortid();
       const parentPath = [
         {collection: collection1, id: id4},
@@ -324,6 +324,45 @@ export default function testBackend(backend: Backend) {
       it('can unsubscribe', async () => {
         await unsubscribe();
       });
+    });
+  });
+
+  describe('ForbiddenError', () => {
+    const collection = 'nekodb-test-forbidden-collection';
+    const id = shortid();
+    it('throws in update', () => {
+      return assert.isRejected(
+        backend.update([{collection, id}], {foo: 'bar'}),
+        ForbiddenError,
+      );
+    });
+
+    it('throws in add', () => {
+      return assert.isRejected(
+        backend.add({parentPath: [], collection}, {foo: 'bar'}),
+        ForbiddenError,
+      );
+    });
+
+    it('throws in remove', () => {
+      return assert.isRejected(
+        backend.remove([{collection, id}]),
+        ForbiddenError,
+      );
+    });
+
+    it('throws in subscribeDocument', () => {
+      return assert.isRejected(
+        backend.subscribeDocument([{collection, id}], fake()),
+        ForbiddenError,
+      );
+    });
+
+    it('throws in subscribeCollection', () => {
+      return assert.isRejected(
+        backend.subscribeCollection({parentPath: [], collection}, fake()),
+        ForbiddenError,
+      );
     });
   });
 }

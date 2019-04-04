@@ -5,14 +5,15 @@ import Connection from '../../server/Connection';
 import MongoDataStore from '../../server/DataStore/MongoDataStore';
 import SocketPair from '../utilities/SocketPair';
 import {MongoClient} from 'mongodb';
+import rules from '../utilities/rules';
 
 describe('SocketBackend with MongoDataStore', async () => {
-  const mongoClient = await MongoClient.connect('mongodb://127.0.0.1:27017');
+  const mongoClient = await MongoClient.connect('mongodb://127.0.0.1:27017', {useNewUrlParser: true});
   const db = mongoClient.db('nekodb');
   const socketPair = new SocketPair();
   const dataStore = new MongoDataStore(db);
   const eventBus = new EventEmitter();
-  new Connection(socketPair.server, dataStore, eventBus);
+  new Connection(socketPair.server, dataStore, eventBus, rules);
 
   testBackend(new SocketBackend(socketPair.client));
 

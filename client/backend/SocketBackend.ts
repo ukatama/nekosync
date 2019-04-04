@@ -2,9 +2,10 @@ import shortid from 'shortid';
 import Backend, {Callback, Unsubscribe} from './Backend';
 import {EventEmitter} from 'events';
 import Socket, {
-  SocketUpstreamEvent, SocketDownstreamEvent, SocketRequestEvent,
+  SocketUpstreamEvent, SocketDownstreamEvent, SocketRequestEvent, SocketErrorCode,
 } from '../../common/Socket';
 import {DocumentPath, CollectionPath, encodePath} from '../../common/Path';
+import {ForbiddenError} from './BackendError';
 
 /**
  * Backend using socket.io
@@ -55,8 +56,10 @@ export default class SocketBackend extends Backend {
       this.requestEventBus.once(
         requestId,
         (error: object | undefined, result: T) => {
-          if (error) reject(error);
-          else resolve(result);
+          if (error) {
+            if ((error as any).code === SocketErrorCode.Forbidden) reject(new ForbiddenError())
+            else reject(error);
+          } else resolve(result);
         },
       );
       this.socket.emit(

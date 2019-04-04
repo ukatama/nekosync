@@ -26,10 +26,12 @@
     "firebase": "^5.9.2",
     "lodash": "^4.17.11",
     "mongodb": "^3.2.2",
+    "path-to-regexp": "^3.0.0",
     "shortid": "^2.2.14"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
+    "@types/chai-as-promised": "^7.1.0",
     "@types/lodash": "^4.14.123",
     "@types/mocha": "^5.2.6",
     "@types/mongodb": "^3.1.22",
