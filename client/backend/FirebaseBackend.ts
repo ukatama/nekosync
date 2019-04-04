@@ -1,7 +1,6 @@
 import {initializeApp, firestore, app} from 'firebase';
-import Backend, {
-  DocumentPath, Callback, Unsubscribe, CollectionPath,
-} from './Backend';
+import Backend, {Callback, Unsubscribe} from './Backend';
+import {CollectionPath, DocumentPath} from '../../common/Path';
 
 // ToDo: Detect document removed event
 const Removed = 'NEKODB_REMOVED';

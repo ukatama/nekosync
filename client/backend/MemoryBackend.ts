@@ -1,38 +1,12 @@
 import merge from 'lodash/merge';
 import EventEmitter from 'events';
-import Backend, {
-  DocumentPath, Callback, CollectionPath, Unsubscribe,
-} from './Backend';
+import Backend, {Callback, Unsubscribe} from './Backend';
 import shortid = require('shortid');
+import {
+  encodePath, getCollectionPath, DocumentPath, CollectionPath, getId,
+} from '../../common/Path';
 
 type Event = 'value' | 'child_added' | 'child_changed' | 'child_removed'
-
-/**
- * Encode path into string
- * @param {DocumentPath | CollectionPath} path - Path to encode
- * @return {string} - Encoded path
- */
-function encodePath(path: DocumentPath | CollectionPath): string {
-  if (Array.isArray(path)) {
-    return path.map((e) => `${e.collection}/${e.id}`).join('/');
-  } else if (path.parentPath.length === 0) return path.collection;
-  return `${encodePath(path.parentPath)}/${path.collection}`;
-}
-
-/**
- * Get collection path of the document
- * @param {DocumentPath} path - Path for document
- * @return {CollectionPath} - Path for collection
- */
-function getCollectionPath(path: DocumentPath): CollectionPath {
-  const parentPath = path.slice(0, -1);
-  const {collection} = path[path.length - 1];
-
-  return {
-    parentPath,
-    collection,
-  };
-}
 
 /**
  * Backend using in memory store
@@ -55,7 +29,7 @@ export default class MemoryBackend extends Backend {
     this.eventBus.on(encodedPath, callback);
 
     const value = this.store[encodedPath];
-    callback(path[path.length - 1].id, value);
+    callback(getId(path), value);
 
     return async () => {
       this.eventBus.off(encodedPath, callback);
@@ -94,7 +68,7 @@ export default class MemoryBackend extends Backend {
    * @param {object} value - Value
    */
   public async update(path: DocumentPath, value: object): Promise<void> {
-    const {id} = path[path.length - 1];
+    const id = getId(path);
     const encodedPath = encodePath(path);
 
     const oldValue = this.store[encodedPath];

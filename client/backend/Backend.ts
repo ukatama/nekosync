@@ -1,15 +1,7 @@
+import {DocumentPath, CollectionPath} from '../../common/Path';
+
 export type Unsubscribe = () => Promise<void>;
 export type Callback = (id: string, value: object | undefined) => void;
-
-export interface PathElement {
-  collection: string;
-  id: string;
-}
-export type DocumentPath = PathElement[];
-export interface CollectionPath {
-  parentPath: DocumentPath;
-  collection: string;
-}
 
 /** Abstract class of any backends */
 export default abstract class Backend {
