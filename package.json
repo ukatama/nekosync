@@ -1,7 +1,7 @@
 {
   "name": "nekodb",
   "version": "0.0.0",
-  "description": "Realtime database with several backends.",
+  "description": "Real-time data store library supporting various backends.",
   "main": "index.js",
   "scripts": {
     "lint": "eslint */**/*.ts",
