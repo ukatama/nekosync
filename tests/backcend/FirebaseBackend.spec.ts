@@ -7,8 +7,15 @@ import testBackend from '../utilities/testBackend';
 describe('FirebaseBackend', () => {
   it('can deploy', async () => {
     await deploy({
+      token: process.env.FIREBASE_TOKEN,
       cwd: path.join(__dirname, '../config'),
     });
   });
-  testBackend(new FirebaseBackend(Config, `${Date.now()}-${Math.random()}`));
+
+  const backend = new FirebaseBackend(Config, `${Date.now()}-${Math.random()}`);
+  testBackend(backend);
+
+  after(async () => {
+    await backend.app.delete();
+  });
 });

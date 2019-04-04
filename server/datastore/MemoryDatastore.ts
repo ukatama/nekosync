@@ -1,14 +1,14 @@
 import merge from 'lodash/merge';
 import shortid from 'shortid';
-import DataStore from './DataStore';
+import Datastore from './Datastore';
 import {
   DocumentPath, encodePath, getDocumentPath, CollectionPath,
 } from '../../common/Path';
 
 /**
- * DataStore using on memory data store
+ * Datastore using on memory data store
  */
-export default class MemoryDataStore extends DataStore {
+export default class MemoryDatastore extends Datastore {
   private store: {[key: string]: object | undefined} = {};
 
   /**

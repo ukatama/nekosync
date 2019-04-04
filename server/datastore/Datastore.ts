@@ -1,9 +1,9 @@
 import {CollectionPath, DocumentPath} from '../../common/Path';
 
 /**
- * DataStore
+ * Datastore
  */
-export default abstract class DataStore {
+export default abstract class Datastore {
   /**
    * Get an document
    * @param {DocumentPath} path - Path for document

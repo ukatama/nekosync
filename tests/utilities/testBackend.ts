@@ -1,12 +1,9 @@
 import uniq from 'lodash/uniq';
-import chai, {assert} from 'chai';
-import chaiAsPromised from 'chai-as-promised';
+import {assert} from 'chai';
 import shortid from 'shortid';
 import {fake} from 'sinon';
 import Backend, {Unsubscribe} from '../../client/backend/Backend';
 import {ForbiddenError} from '../../client/backend/BackendError';
-
-chai.use(chaiAsPromised);
 
 export default function testBackend(backend: Backend) {
   describe('value', () => {

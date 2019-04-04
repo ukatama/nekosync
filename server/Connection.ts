@@ -1,8 +1,11 @@
 import {EventEmitter} from 'events';
 import Socket, {
-  SocketUpstreamEvent, SocketRequestEvent, SocketDownstreamEvent, SocketErrorCode,
+  SocketDownstreamEvent,
+  SocketErrorCode,
+  SocketRequestEvent,
+  SocketUpstreamEvent,
 } from '../common/Socket';
-import DataStore from './dataStore/DataStore';
+import Datastore from './datastore/Datastore';
 import {
   CollectionPath,
   DocumentPath,
@@ -34,7 +37,7 @@ class ConnectionError extends Error {
  */
 export default class Connection {
   private socket: Socket;
-  private dataStore: DataStore;
+  private datastore: Datastore;
   private eventBus: EventEmitter;
   private rules: CompiledRule[];
   private subscriptionCounter: { [path: string]: number | undefined } = {};
@@ -47,18 +50,18 @@ export default class Connection {
   /**
    * Constructor
    * @param {Socket} socket - Socket instance
-   * @param {DataStore} dataStore - DataStore instance
+   * @param {Datastore} datastore - Datastore instance
    * @param {EventEmitter} eventBus - EventBus instance
    * @param {Rule[]} rules - Rules
    */
   public constructor(
     socket: Socket,
-    dataStore: DataStore,
+    datastore: Datastore,
     eventBus: EventEmitter,
     rules: Rule[],
   ) {
     this.socket = socket;
-    this.dataStore = dataStore;
+    this.datastore = datastore;
     this.eventBus = eventBus;
     this.rules = compile(rules);
     this.onSnapshot = (
@@ -134,7 +137,7 @@ export default class Connection {
           this.eventBus.on(encodedPath, this.onSnapshot);
         }
         if (Array.isArray(path)) {
-          const value = await this.dataStore.get(path);
+          const value = await this.datastore.get(path);
           this.socket.emit(
             SocketDownstreamEvent.Snapshot,
             path,
@@ -142,7 +145,7 @@ export default class Connection {
             value,
           );
         } else {
-          const values = await this.dataStore.list(path);
+          const values = await this.datastore.list(path);
           values.forEach(({id, value}) => {
             this.socket.emit(
               SocketDownstreamEvent.Snapshot,
@@ -171,21 +174,21 @@ export default class Connection {
       case SocketRequestEvent.Update: {
         const [path, value]: [DocumentPath, object] = args;
         await this.authorize(path, 'write');
-        const newValue = await this.dataStore.update(path, value);
+        const newValue = await this.datastore.update(path, value);
         this.emitUpdate(path, newValue);
         return undefined;
       }
       case SocketRequestEvent.Add: {
         const [path, value]: [CollectionPath, object] = args;
         await this.authorize(path, 'write');
-        const id = await this.dataStore.add(path, value);
+        const id = await this.datastore.add(path, value);
         this.emitUpdate(getDocumentPath(path, id), value);
         return id;
       }
       case SocketRequestEvent.Remove: {
         const [path]: [DocumentPath] = args;
         await this.authorize(path, 'write');
-        await this.dataStore.remove(path);
+        await this.datastore.remove(path);
         this.emitUpdate(path, undefined);
         return;
       }

@@ -79,7 +79,7 @@ function getCollection(
  * Backend using in Firebase Cloud Firestore
  */
 export default class FirebaseBackend extends Backend {
-  private app: app.App;
+  public app: app.App;
 
   /**
    * Constructor
@@ -112,6 +112,8 @@ export default class FirebaseBackend extends Backend {
   ): Promise<Unsubscribe> {
     return await handleError(async () => {
       const document = getDocument(this.firestore, path);
+      const snapshot = await document.get();
+
       const unsubscribe = document.onSnapshot(
         (snapshot) => callback(snapshot.id, filter(snapshot.data())),
         (error) => {
@@ -119,7 +121,6 @@ export default class FirebaseBackend extends Backend {
         },
       );
 
-      const snapshot = await document.get();
       callback(snapshot.id, snapshot.data());
 
       return async () => {
@@ -140,6 +141,8 @@ export default class FirebaseBackend extends Backend {
   ): Promise<Unsubscribe> {
     return await handleError(async () => {
       const collection = getCollection(this.firestore, path);
+      const snapshot = await collection.get();
+
       const unsubscribe = collection.onSnapshot(
         (snapshot) => snapshot.forEach(
           (result) => callback(result.id, filter(result.data())),
@@ -149,7 +152,6 @@ export default class FirebaseBackend extends Backend {
         },
       );
 
-      const snapshot = await collection.get();
       snapshot.forEach((result) => callback(result.id, filter(result.data())));
 
       return async () => {

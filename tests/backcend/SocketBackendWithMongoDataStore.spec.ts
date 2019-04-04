@@ -2,18 +2,18 @@ import {EventEmitter} from 'events';
 import SocketBackend from '../../client/backend/SocketBackend';
 import testBackend from '../utilities/testBackend';
 import Connection from '../../server/Connection';
-import MongoDataStore from '../../server/DataStore/MongoDataStore';
+import MongoDatastore from '../../server/datastore/MongoDatastore';
 import SocketPair from '../utilities/SocketPair';
 import {MongoClient} from 'mongodb';
 import rules from '../utilities/rules';
 
-describe('SocketBackend with MongoDataStore', async () => {
+describe('SocketBackend with MongoDatastore', async () => {
   const mongoClient = await MongoClient.connect('mongodb://127.0.0.1:27017', {useNewUrlParser: true});
   const db = mongoClient.db('nekodb');
   const socketPair = new SocketPair();
-  const dataStore = new MongoDataStore(db);
+  const datastore = new MongoDatastore(db);
   const eventBus = new EventEmitter();
-  new Connection(socketPair.server, dataStore, eventBus, rules);
+  new Connection(socketPair.server, datastore, eventBus, rules);
 
   testBackend(new SocketBackend(socketPair.client));
 

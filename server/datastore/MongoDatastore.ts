@@ -2,14 +2,18 @@ import {Collection, Db} from 'mongodb';
 import merge from 'lodash/merge';
 import omit from 'lodash/omit';
 import {
-  CollectionPath, DocumentPath, getCollectionPath, encodePath, getDocumentPath, getId,
+  CollectionPath,
+  DocumentPath,
+  encodePath,
+  getCollectionPath,
+  getDocumentPath,
 } from '../../common/Path';
 import shortid = require('shortid');
 
 /**
- * DataStore with MongoDB
+ * Datastore with MongoDB
  */
-export default class MongoDataStore {
+export default class MongoDatastore {
   private db: Db;
 
   /**
