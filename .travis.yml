@@ -2,7 +2,6 @@ language: node_js
 node_js:
 - lts/*
 - node
-before_script: ts-node ci/beforeScript.ts
 env:
   global:
   - secure: V8egiPm6h6TgqNapq9c7AYGWd4a3qk++C/fsLqvvZ/BBR8hVvHBeSG99lMx2lo4J1CpCIKyiy7D2VCpqf3saGOUk34fHo2iOxLkOp0Myt8p7G0Q8Y7yO8eJUUUdCVM35zmPlzkQMwYid9vY0hLd9oyyoB9XixyP+3o2I5/6+3seKbvZhJX/ViJsPW/aWdqB0lcluqt6giORIa3NiYkctBmTuWLznlBh3sHlFNO8VXKPf0gW7WLMvBTP22o67/4uuBlcLQXhiMGwMJ+PK6gnqlrGxNhS6DMgCGRZua3AVmaBVlYzI0RumFJs/Sdc8+0PsF/LGZBuB6xc/tl/ZH1muVBSPnjf6ouaW1SaeiZtbIrRJuevUt+jHrVah+2RaHZMZh/3W48t+v8IwYZQ/e/1WRWZIwEVidIXAj0WtDU8LgDPXoYJH7OH07jf7g7ZiKCrx0Vy74SvFDeogXJbI+YxaPzeG6LGoWKWgIpCT5mSbEVmTVhHMFUTtr8ke0qG2oCDrhiC91wr/TPrj30qd0BNKCKH9yiK0ReKCF+G5UE7HOx3HmXBokbPfxNxMhoLYwHG8DkKjRy6XZHsSnjVE0Bh5vLRV1y8dzACyB7cESQYTSg0Pttk9Ol/Jhn/6ivQRS550ZBueM+uwMX+x3klN0HQ8gYI27C48t9dXvbHbkRt2QlU=
@@ -12,3 +11,10 @@ env:
   - secure: p7RTHorgcOeR0AbpPa4Tq+Algo56OE/byBHKiaquWobR7KVRygbilmO1SwZbry+sSG+lvSrAdLdig8oRnBFFxz92h8GRwGWvSna4tAg7i+BV9wFEVZgHdkcV9GGWAVE8QSD3BNbkUlvFw5TVTg9jwEQVcREcLzcLiF8HvrXErZaZEWK00JPyeGs0ztFbF9huKsLsxl/A5EIu/bq5f13IVt0qMN+Ouy2BgUogueSmtXnFLRwQwjSFNnjuH+5+ABQcVPknUNaYMiEWev8sgE1yK/j2HJitWEpydpbGZKPIY39nb5jr2ulDb3IRpPAesbbhLdvprWt7O6Wi2LBCO4+QtVba0PW97iJ4nI4u1gSheFVMpGZjrQSBKCWdFl+No1LX0Tv4MO7d6yK343S+fbYOIT7JjbuvPcrD3qckhH5OKblaBDYwDTRjzCtWF0+ebizX/M4kHaz8A9L57qoG6C1Dybscvl+0ndiqCb7W9NeSo0TLxFd/MkuCXd4kx8DPSpCZqlSXZMGF0Gj+eyNYxCJNzUcE2Kh8oTyGSMdtp5BN8f9QvBfTZDNu4jGos6WBWBgA1d+jeDWrhV7dLrJPbJOwXTu+kS/8umAIPd3+VctTV0rDoUMimSbrWkH9LMFx+7xuWrBcXh2YEoxebREKLT672rE8SFXeRngOCFQ5t145W1M=
 services:
 - mongodb
+before_script:
+- ts-node ci/beforeScript.ts
+script:
+- nyc npm test
+after_success:
+- if [ "${TRAVIS_NODE_VERSION}" = "node" ]; then nyc report --reporter=text-lcov | coveralls;
+  fi

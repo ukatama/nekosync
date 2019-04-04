@@ -1,0 +1,10 @@
+{
+  "exclude": [
+    "**/*.spec.ts",
+    "tests/**/*.ts"
+  ],
+  "extension": [
+    ".ts"
+  ],
+  "sourceMap": true
+}
