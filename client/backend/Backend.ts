@@ -1,53 +1,49 @@
 export type Unsubscribe = () => Promise<void>;
-export type Callback = (id: string, value: object) => void;
+export type Callback = (id: string, value: object | undefined) => void;
 
 export interface PathElement {
   collection: string;
   id: string;
 }
-export type ItemPath = PathElement[];
+export type DocumentPath = PathElement[];
 export interface CollectionPath {
-  parentPath: ItemPath;
+  parentPath: DocumentPath;
   collection: string;
 }
 
 /** Abstract class of any backends */
 export default abstract class Backend {
   /**
-   * Subscribe an item
-   * @param {ItemPath} path - Path for item
-   * @param {Callback} onValue - Callback
+   * Subscribe an document
+   * @param {DocumentPath} path - Path for document
+   * @param {Callback} callback - Callback
    * @return {Unsubscribe} Function to unsubscribe
    */
-  public abstract subscribeValue(
-    path: ItemPath,
-    onValue: Callback,
+  public abstract subscribeDocument(
+    path: DocumentPath,
+    callback: Callback,
   ): Promise<Unsubscribe>;
 
   /**
-   * Subscribe child items
+   * Subscribe child documents
    * @param {CollectionPath} path - Path for collection
-   * @param {Callback} onAdded - Callback
-   * @param {Callback} onChanged - Callback
-   * @param {Callback} onRemoved - Callback
+   * @param {Callback} callback - Callback
    * @return {Unsubscribe} Function to unsubscribe
    */
-  public abstract subscribeChildren(
+  public abstract subscribeCollection(
     path: CollectionPath,
-    onAdded: Callback,
-    onChanged: Callback,
-    onRemoved: Callback,
+    callback: Callback,
   ): Promise<Unsubscribe>;
 
   /**
-   * Update an item
-   * @param {ItemPath} path - Path for item
+   * Update an document
+   * @param {DocumentPath} path - Path for document
    * @param {object} value - Value
    */
-  public abstract update(path: ItemPath, value: object): Promise<void>;
+  public abstract update(path: DocumentPath, value: object): Promise<void>;
 
   /**
-   * Add new item
+   * Add new document
    * @param {CollectionPath} path - Path of collection to add
    * @param {object} value - Value
    * @return {Promise<string>} - Added id
@@ -55,9 +51,9 @@ export default abstract class Backend {
   public abstract add(path: CollectionPath, value: object): Promise<string>;
 
   /**
-   * Remove item
-   * @param {ItemPath} path - Path for item
+   * Remove document
+   * @param {DocumentPath} path - Path for document
    * @param {object} value - Value
    */
-  public abstract remove(path: ItemPath): Promise<void>;
+  public abstract remove(path: DocumentPath): Promise<void>;
 }

@@ -1,7 +1,7 @@
 import merge from 'lodash/merge';
 import EventEmitter from 'events';
 import Backend, {
-  ItemPath, Callback, CollectionPath, Unsubscribe,
+  DocumentPath, Callback, CollectionPath, Unsubscribe,
 } from './Backend';
 import shortid = require('shortid');
 
@@ -9,10 +9,10 @@ type Event = 'value' | 'child_added' | 'child_changed' | 'child_removed'
 
 /**
  * Encode path into string
- * @param {ItemPath | CollectionPath} path - Path to encode
+ * @param {DocumentPath | CollectionPath} path - Path to encode
  * @return {string} - Encoded path
  */
-function encodePath(path: ItemPath | CollectionPath): string {
+function encodePath(path: DocumentPath | CollectionPath): string {
   if (Array.isArray(path)) {
     return path.map((e) => `${e.collection}/${e.id}`).join('/');
   } else if (path.parentPath.length === 0) return path.collection;
@@ -20,21 +20,11 @@ function encodePath(path: ItemPath | CollectionPath): string {
 }
 
 /**
- * Encode path and event into string
- * @param {ItemPath | CollectionPath} path - Path to encode
- * @param {Event} event - Event
- * @return {string} - Encoded string
- */
-function encodeEvent(path: ItemPath | CollectionPath, event: Event): string {
-  return `${encodePath(path)}:${event}`;
-}
-
-/**
- * Get collection path of the item
- * @param {ItemPath} path - Path for item
+ * Get collection path of the document
+ * @param {DocumentPath} path - Path for document
  * @return {CollectionPath} - Path for collection
  */
-function getCollectionPath(path: ItemPath): CollectionPath {
+function getCollectionPath(path: DocumentPath): CollectionPath {
   const parentPath = path.slice(0, -1);
   const {collection} = path[path.length - 1];
 
@@ -52,74 +42,58 @@ export default class MemoryBackend extends Backend {
   private store: { [key: string]: object | undefined } = {};
 
   /**
-   * Subscribe single item
-   * @param {ItemPath} path - Path for item
-   * @param {Callback} onValue - Callback
+   * Subscribe single document
+   * @param {DocumentPath} path - Path for document
+   * @param {Callback} callback - Callback
    * @return {Unsubscribe} Function to unsubscribe
    */
-  public async subscribeValue(
-    path: ItemPath,
-    onValue: Callback,
+  public async subscribeDocument(
+    path: DocumentPath,
+    callback: Callback,
   ): Promise<Unsubscribe> {
-    const event = encodeEvent(path, 'value');
-    this.eventBus.on(event, onValue);
+    const encodedPath = encodePath(path);
+    this.eventBus.on(encodedPath, callback);
 
-    const value = this.store[encodePath(path)];
-    if (value !== undefined) {
-      onValue(path[path.length - 1].id, value);
-    }
+    const value = this.store[encodedPath];
+    callback(path[path.length - 1].id, value);
 
     return async () => {
-      this.eventBus.off(event, onValue);
+      this.eventBus.off(encodedPath, callback);
     };
   }
 
   /**
-   * Subscribe child items
+   * Subscribe child documents
    * @param {CollectionPath} path - Path for collection
-   * @param {Callback} onAdded - Callback
-   * @param {Callback} onChanged - Callback
-   * @param {Callback} onRemoved - Callback
+   * @param {Callback} callback - Callback
    * @return {Unsubscribe} Function to unsubscribe
    */
-  public async subscribeChildren(
+  public async subscribeCollection(
     path: CollectionPath,
-    onAdded: Callback,
-    onChanged: Callback,
-    onRemoved: Callback,
+    callback: Callback,
   ): Promise<Unsubscribe> {
-    const pairs: [Event, Callback][] = [
-      ['child_added', onAdded],
-      ['child_changed', onChanged],
-      ['child_removed', onRemoved],
-    ];
-
-    pairs.forEach(([event, callback]) => {
-      this.eventBus.on(encodeEvent(path, event), callback);
-    });
-
     const encodedPath = encodePath(path);
+    this.eventBus.on(encodedPath, callback);
+
     Object.keys(this.store)
       .forEach((key) => {
         const match = key.match(new RegExp(`^${encodedPath}/([^/]+)$`));
         if (!match) return;
         const value = this.store[key];
-        if (value !== undefined) onAdded(match[1], value);
+        callback(match[1], value);
       });
 
     return async () => {
-      pairs.forEach(([event, callback]) => {
-        this.eventBus.off(encodeEvent(path, event), callback);
-      });
+      this.eventBus.off(encodedPath, callback);
     };
   }
 
   /**
-   * Update an item
-   * @param {ItemPath} path - Path for item
+   * Update an document
+   * @param {DocumentPath} path - Path for document
    * @param {object} value - Value
    */
-  public async update(path: ItemPath, value: object): Promise<void> {
+  public async update(path: DocumentPath, value: object): Promise<void> {
     const {id} = path[path.length - 1];
     const encodedPath = encodePath(path);
 
@@ -127,50 +101,40 @@ export default class MemoryBackend extends Backend {
     const newValue = oldValue === undefined ? value : merge(oldValue, value);
     this.store[encodedPath] = newValue;
 
-    this.eventBus.emit(encodeEvent(path, 'value'), id, newValue);
-    this.eventBus.emit(
-      encodeEvent(
-        getCollectionPath(path),
-        oldValue === undefined ? 'child_added' : 'child_changed',
-      ),
-      id,
-      newValue,
-    );
+    this.eventBus.emit(encodedPath, id, newValue);
+    this.eventBus.emit(encodePath(getCollectionPath(path)), id, newValue);
   }
 
   /**
-   * Add new item
+   * Add new document
    * @param {CollectionPath} path - Path of collection to add
    * @param {object} value - Value
    * @return {Promise<string>} - Added id
    */
   public async add(path: CollectionPath, value: object): Promise<string> {
     const id = shortid();
-    const itemPath = [
+    const documentPath = [
       ...path.parentPath,
       {
         collection: path.collection,
         id,
       },
     ];
-    await this.update(itemPath, value);
+    await this.update(documentPath, value);
     return id;
   }
 
   /**
-   * Remove item
-   * @param {ItemPath} path - Path for item
+   * Remove document
+   * @param {DocumentPath} path - Path for document
    * @param {object} value - Value
    */
-  public async remove(path: ItemPath): Promise<void> {
+  public async remove(path: DocumentPath): Promise<void> {
     const id = path[path.length-1].id;
-    const value = this.store[encodePath(path)];
-    delete this.store[encodePath(path)];
+    const encodedPath = encodePath(path);
+    delete this.store[encodedPath];
 
-    this.eventBus.emit(
-      encodeEvent(getCollectionPath(path), 'child_removed'),
-      id,
-      value,
-    );
+    this.eventBus.emit(encodedPath, id, undefined);
+    this.eventBus.emit(encodePath(getCollectionPath(path)), id, undefined);
   }
 }
