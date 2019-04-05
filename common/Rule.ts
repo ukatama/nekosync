@@ -1,4 +1,6 @@
-import pathToRegexp from 'path-to-regexp';
+import fromPairs from 'lodash/fromPairs';
+import zip from 'lodash/zip';
+import pathToRegexp, { Key } from 'path-to-regexp';
 import {DocumentPath, CollectionPath, encodePath} from './Path';
 
 export interface Reader {
@@ -7,7 +9,7 @@ export interface Reader {
   getUserId(): Promise<string | undefined>;
 }
 
-export type RuleFunction = (path: DocumentPath, reader: Reader) => Promise<boolean>;
+export type RuleFunction = (path: DocumentPath, params: {[key: string]: string | undefined}, reader: Reader) => Promise<boolean>;
 
 export default interface Rule {
   path: string;
@@ -16,6 +18,7 @@ export default interface Rule {
 }
 
 export interface CompiledRule {
+  keys: Key[],
   regexp: RegExp;
   read: boolean | RuleFunction;
   write: boolean | RuleFunction;
@@ -27,11 +30,15 @@ export interface CompiledRule {
  * @return {CompiledRule[]} Rules compiled
  */
 export function compile(rules: Rule[]): CompiledRule[] {
-  return rules.map((rule) => ({
-    regexp: pathToRegexp(rule.path.substr(1)),
-    read: rule.read,
-    write: rule.write,
-  }));
+  return rules.map((rule) => {
+    const keys: Key[] = [];
+    return {
+      keys,
+      regexp: pathToRegexp(rule.path.substr(1), keys),
+      read: rule.read,
+      write: rule.write,
+    };
+  });
 }
 
 /**
@@ -57,8 +64,15 @@ export async function authorize(
   );
   if (!rule) return false;
 
-  const allow = rule[mode];
-  if (typeof allow === 'boolean') return allow;
+  const m = rule.regexp.exec(encodedPath);
+  if (!m) return false;
+  
+  const cond = rule[mode];
+  if (typeof cond === 'boolean') return cond;
 
-  return await allow(documentPath, reader);
+  const pairs = zip(rule.keys, m.slice(1))
+    .map(([key, value]) => key && [key.name, value])
+    .filter(a => a) as [string, string | undefined][];
+
+  return await cond(documentPath, fromPairs(pairs), reader);
 }

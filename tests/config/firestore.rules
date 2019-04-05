@@ -9,5 +9,12 @@ service cloud.firestore {
         allow read, write;
       }
     }
+    match /nekord-test-c/{id} {
+      allow read;
+      allow write: if get(/databases/$(database)/documents/nekord-test-d/$(id)).data.writable == true;
+    }
+    match /nekord-test-d/{id} {
+      allow read, write;
+    }
   }
 }

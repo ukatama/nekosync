@@ -8,6 +8,8 @@ import { EmptyPathError, CollectionPath, DocumentPath, getId, getDocumentPath } 
 
 const collectionA = 'nekord-test-a';
 const collectionB = 'nekord-test-b';
+const collectionC = 'nekord-test-c';
+const collectionD = 'nekord-test-d';
 const collectionX = 'nekord-test-x';
 
 function getParentPath(nested: boolean) : DocumentPath {
@@ -213,6 +215,42 @@ function testError(backend: Backend): void {
   });
 }
 
+function testRules(backend: Backend): void {
+  describe('conditional rule', () => {
+    const id = shortid();
+    it('can update', async () => {
+      await backend.update([{ collection: collectionD, id}], {writable: true});
+      await backend.update([{ collection: collectionC, id}], {c: 'c'});
+    });
+
+    it('can not update', async () => {
+      await backend.update([{ collection: collectionD, id}], {writable: false});
+      await assert.isRejected(
+        backend.update([{ collection: collectionC, id}], {c: 'cc'}),
+        ForbiddenError,
+      );
+    });
+    
+    it('can not write', async () => {
+      await backend.remove([{ collection: collectionD, id}]);
+      await assert.isRejected(
+        backend.update([{ collection: collectionC, id}], {c: 'cc'}),
+        ForbiddenError,
+      );
+      await assert.isRejected(
+        backend.remove([{ collection: collectionC, id}]),
+        ForbiddenError,
+      );
+    });
+
+    it('can remove', async () => {
+      await backend.update([{ collection: collectionD, id}], {writable: true});
+      await backend.remove([{ collection: collectionC, id}]);
+      await backend.remove([{ collection: collectionD, id}]);
+    });
+  });
+}
+
 export default function testBackend(backend: Backend): void {
   describe('document subscription', () => {
     teestDocument(backend, false);
@@ -227,4 +265,7 @@ export default function testBackend(backend: Backend): void {
       testCollection(backend, true);
     });
   });
+
+  testError(backend);
+  testRules(backend);
 }
