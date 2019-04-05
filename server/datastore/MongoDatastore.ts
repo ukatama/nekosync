@@ -46,6 +46,7 @@ export default class MongoDatastore {
     const value = await collection.findOne(
       {path: encodePath(path)},
     );
+    if (value === null) return undefined;
     return omit(value, ['path', '_id']);
   }
 

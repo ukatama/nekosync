@@ -1,7 +1,9 @@
 import fromPairs from 'lodash/fromPairs';
 import zip from 'lodash/zip';
 import pathToRegexp, {Key} from 'path-to-regexp';
-import {DocumentPath, CollectionPath, encodePath} from './Path';
+import {
+  DocumentPath, CollectionPath, encodePath, getDocumentPath,
+} from './Path';
 
 export interface Reader {
   get(path: DocumentPath): Promise<object | undefined>;
@@ -61,20 +63,24 @@ export async function authorize(
 ): Promise<boolean> {
   const documentPath = Array.isArray(path)
     ? path
-    : [...path.parentPath, {collection: path.collection, id: '$id'}];
+    : getDocumentPath(path, '$id');
   const encodedPath = encodePath(documentPath);
-  const rule = rules.find(
-    (rule) => rule.regexp.exec(encodedPath) !== null,
-  );
-  if (!rule) return false;
+  const matched = rules.map((rule) => {
+    const match = rule.regexp.exec(encodedPath);
+    if (!match) return null;
+    return {match, rule};
+  }).filter((a) => a !== null)[0];
+  if (!matched) return false;
 
-  const m = rule.regexp.exec(encodedPath);
-  if (!m) return false;
+  const {
+    match,
+    rule,
+  } = matched;
 
   const cond = rule[mode];
   if (typeof cond === 'boolean') return cond;
 
-  const pairs = zip(rule.keys, m.slice(1))
+  const pairs = zip(rule.keys, match.slice(1))
     .map(([key, value]) => key && [key.name, value])
     .filter((a) => a) as [string, string | undefined][];
 

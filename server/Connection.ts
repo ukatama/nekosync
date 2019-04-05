@@ -188,27 +188,33 @@ export default class Connection {
         return undefined;
       }
       case SocketRequestEvent.Update: {
-        if (!Array.isArray(path) || value === undefined) throw new Error();
+        if (!Array.isArray(path) || value === undefined) {
+          throw new TypeError('Invalid message');
+        }
         await this.authorize(path, 'write');
         const newValue = await this.datastore.update(path, value);
         this.emitUpdate(path, newValue);
         return undefined;
       }
       case SocketRequestEvent.Add: {
-        if (Array.isArray(path) || value === undefined) throw new Error();
+        if (Array.isArray(path) || value === undefined) {
+          throw new TypeError('Invalid message');
+        }
         await this.authorize(path, 'write');
         const id = await this.datastore.add(path, value);
         this.emitUpdate(getDocumentPath(path, id), value);
         return id;
       }
       case SocketRequestEvent.Remove: {
-        if (!Array.isArray(path)) throw new Error();
+        if (!Array.isArray(path)) {
+          throw new TypeError('Invalid message');
+        }
         await this.authorize(path, 'write');
         await this.datastore.remove(path);
         this.emitUpdate(path, undefined);
         return;
       }
     }
-    throw new Error(`Unknown event (${event})`);
+    throw new TypeError(`Unknown event (${event})`);
   }
 }

@@ -1,10 +1,15 @@
+import {getCollectionPath} from '../../common/Path';
 import Rule from '../../common/Rule';
 
 const rules: Rule[] = [
   {
     path: '/nekord-test-a/:id',
     read: true,
-    write: true,
+    async write(path, params, reader) {
+      await reader.list(getCollectionPath(path));
+      await reader.getUserId();
+      return true;
+    },
   },
   {
     path: '/nekord-test-b/:id',
