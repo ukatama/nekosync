@@ -13,6 +13,8 @@ import Rule, {CompiledRule, compile, authorize} from '../../common/Rule';
 import Backend, {Callback, Unsubscribe} from './Backend';
 import {ForbiddenError} from './BackendError';
 
+const UserId = `user-${shortid()}`;
+
 /**
  * Backend using in memory store
  */
@@ -31,6 +33,31 @@ export default class MemoryBackend extends Backend {
   }
 
   /**
+   * Get value
+   * @param path - Path for collection
+   * @return {object | undefined} - Value
+   */
+  public get(path: DocumentPath): object | undefined {
+    return this.store[encodePath(path)];
+  }
+
+  /**
+   * List values
+   * @param {CollectionPath} path - Path for collection
+   * @return{[string, object][]} - Array of [id, value]
+   */
+  public list(path: CollectionPath): [string, object][] {
+    const encodedPath = encodePath(path);
+    return Object.keys(this.store)
+      .map((key) => {
+        const match = key.match(new RegExp(`^${encodedPath}/([^/]+)$`));
+        if (!match) return undefined;
+        return [match[1], this.store[key]];
+      })
+      .filter(a => a !== undefined) as [string, object][];
+  }
+
+  /**
    * Authorize path by rule
    * @param {DocumentPath | CollectionPath} path - Path
    * @param {'read' | 'write'} mode - Mode to access
@@ -39,7 +66,13 @@ export default class MemoryBackend extends Backend {
     path: DocumentPath | CollectionPath,
     mode: 'read' | 'write',
   ): Promise<void> {
-    const result = await authorize(path, this.rules, mode);
+    const result = await authorize(path, this.rules, mode, {
+      get: async (path) => this.get(path),
+      list: async (path) => this.list(path).map(a => a[1]),
+      async getUserId() {
+        return UserId;
+      },
+    });
     if (!result) throw new ForbiddenError();
   }
 
@@ -58,7 +91,7 @@ export default class MemoryBackend extends Backend {
     const encodedPath = encodePath(path);
     this.eventBus.on(encodedPath, callback);
 
-    const value = this.store[encodedPath];
+    const value = this.get(path);
     callback(getId(path), value);
 
     return async () => {
@@ -81,13 +114,10 @@ export default class MemoryBackend extends Backend {
     const encodedPath = encodePath(path);
     this.eventBus.on(encodedPath, callback);
 
-    Object.keys(this.store)
-      .forEach((key) => {
-        const match = key.match(new RegExp(`^${encodedPath}/([^/]+)$`));
-        if (!match) return;
-        const value = this.store[key];
-        callback(match[1], value);
-      });
+    const values = this.list(path);
+    values.forEach(([id, value]) => {
+      callback(id, value);
+    });
 
     return async () => {
       this.eventBus.off(encodedPath, callback);

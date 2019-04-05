@@ -99,7 +99,11 @@ export default class Connection {
     path: DocumentPath | CollectionPath,
     mode: 'read' | 'write',
   ): Promise<void> {
-    const result = await authorize(path, this.rules, mode);
+    const result = await authorize(path, this.rules, mode, {
+      get: (path) => this.datastore.get(path),
+      list: (path) => this.datastore.list(path),
+      getUserId: async () => this.socket.id,
+    });
     if (!result) throw new ConnectionError(SocketErrorCode.Forbidden);
   }
 

@@ -1,4 +1,5 @@
 import {assert} from 'chai';
+import shortid from 'shortid';
 import {fake} from 'sinon';
 import rules from '../tests/utilities/rules';
 import MemoryBackend from './backend/MemoryBackend';
@@ -6,36 +7,38 @@ import {Unsubscribe} from './backend/Backend';
 import Collection from './Collection';
 import Document, {attribute, collection} from './Document';
 
+const CollectionA = 'nekord-test-a';
+const CollectionB = 'nekord-test-b';
+
 describe('Collection', () => {
-  class ChildDocument extends Document<{ baz: number }> {
-    @attribute({required: true}) baz!: number;
+  class DocumentA extends Document<{a1: string, a2?: number}> {
+    @attribute({required: true}) a1!: string;
+    @attribute() a2?: number;
   }
 
-  class TestDocument extends Document<{ foo: string; bar?: number }> {
-    @attribute({required: true}) foo!: string;
-    @attribute() bar?: number;
+  class DocumentB extends Document<{b1: string}> {
+    @attribute({required: true}) b1!: string;
 
     @collection(
-      ChildDocument,
-      'nekord-test-value-nested-collection-2',
-    ) child!: Collection<ChildDocument>;
+      DocumentA,
+      CollectionA,
+    ) child!: Collection<DocumentA>
   }
 
   const backend = new MemoryBackend(rules);
-  let collection1: Collection<TestDocument>;
+  let collectionA: Collection<DocumentA>;
+  let collectionB: Collection<DocumentB>;
   it('can initialize', () => {
-    collection1 = new Collection(
-      TestDocument,
-      backend,
-      'nekord-test-value-nested-collection-1',
-    );
+    collectionA = new Collection(DocumentA, backend, CollectionA);
+    collectionB = new Collection(DocumentB, backend, CollectionB);
   });
 
+  const id = shortid();
   const onUpdate = fake();
   const onRemove = fake();
   let unsubscribe: Unsubscribe;
   it('can subscribe document', async () => {
-    unsubscribe = await collection1.subscribeDocument('1', onUpdate, onRemove);
+    unsubscribe = await collectionA.subscribeDocument(id, onUpdate, onRemove);
   });
 
   it('calls callback', () => {
@@ -45,16 +48,16 @@ describe('Collection', () => {
   });
 
   it('can update', async () => {
-    await collection1.update('1', {foo: 'foo', bar: 1});
+    await collectionA.update(id, {a1: 'foo', a2: 1});
   });
 
-  let document: TestDocument;
+  let documentA: DocumentA;
   it('calls callback', () => {
     assert(onUpdate.called);
-    document = onUpdate.lastCall.args[0];
-    assert.equal(document.id, '1');
-    assert.equal(document.foo, 'foo');
-    assert.equal(document.bar, 1);
+    documentA = onUpdate.lastCall.args[0];
+    assert.equal(documentA.id, id);
+    assert.equal(documentA.a1, 'foo');
+    assert.equal(documentA.a2, 1);
     onUpdate.resetHistory();
     assert.isFalse(onUpdate.called);
   });
@@ -64,40 +67,40 @@ describe('Collection', () => {
   });
 
   it('can subscribe document again', async () => {
-    unsubscribe = await collection1.subscribeDocument('1', onUpdate, onRemove);
+    unsubscribe = await collectionA.subscribeDocument(id, onUpdate, onRemove);
   });
 
   it('calls callback', () => {
     assert(onUpdate.called);
-    document = onUpdate.lastCall.args[0];
-    assert.equal(document.id, '1');
-    assert.equal(document.foo, 'foo');
-    assert.equal(document.bar, 1);
+    documentA = onUpdate.lastCall.args[0];
+    assert.equal(documentA.id, id);
+    assert.equal(documentA.a1, 'foo');
+    assert.equal(documentA.a2, 1);
     onUpdate.resetHistory();
     assert.isFalse(onRemove.called);
   });
 
   it('can update', async () => {
-    document.update({foo: 'fooo', bar: 3});
+    documentA.update({a1: 'fooo', a2: 3});
   });
 
   it('calls callback', () => {
     assert(onUpdate.called);
-    document = onUpdate.lastCall.args[0];
-    assert.equal(document.id, '1');
-    assert.equal(document.foo, 'fooo');
-    assert.equal(document.bar, 3);
+    documentA = onUpdate.lastCall.args[0];
+    assert.equal(documentA.id, id);
+    assert.equal(documentA.a1, 'fooo');
+    assert.equal(documentA.a2, 3);
     onUpdate.resetHistory();
     assert.isFalse(onRemove.called);
   });
 
   it('can remove', async () => {
-    document.remove();
+    documentA.remove();
   });
 
   it('calls callback', () => {
     assert(onRemove.called);
-    assert.deepEqual(onRemove.lastCall.args, ['1']);
+    assert.deepEqual(onRemove.lastCall.args, [id]);
     onRemove.resetHistory();
     assert.isFalse(onUpdate.called);
   });
@@ -107,7 +110,7 @@ describe('Collection', () => {
   });
 
   it('can subscribe collection', async () => {
-    unsubscribe = await collection1.subscribeCollection(onUpdate, onRemove);
+    unsubscribe = await collectionA.subscribeCollection(onUpdate, onRemove);
   });
 
   it('does not call callback', () => {
@@ -116,21 +119,21 @@ describe('Collection', () => {
   });
 
   it('can add', async () => {
-    document = await collection1.add({foo: 'foo'});
+    documentA = await collectionA.add({a1: 'foo'});
   });
 
   it('returns document', () => {
-    assert.isDefined(document.id);
-    assert.equal(document.foo, 'foo');
-    assert.isUndefined(document.bar);
+    assert.isDefined(documentA.id);
+    assert.equal(documentA.a1, 'foo');
+    assert.isUndefined(documentA.a2);
   });
 
   it('calls callback', () => {
     assert(onUpdate.called);
     const doc = onUpdate.lastCall.args[0];
-    assert.equal(doc.id, document.id);
-    assert.equal(doc.foo, 'foo');
-    assert.isUndefined(doc.bar);
+    assert.equal(doc.id, documentA.id);
+    assert.equal(doc.a1, 'foo');
+    assert.isUndefined(doc.a2);
     onUpdate.resetHistory();
     assert.isFalse(onRemove.called);
   });
@@ -140,40 +143,40 @@ describe('Collection', () => {
   });
 
   it('can subscribe collection again', async () => {
-    unsubscribe = await collection1.subscribeCollection(onUpdate, onRemove);
+    unsubscribe = await collectionA.subscribeCollection(onUpdate, onRemove);
   });
 
   it('calls callback', () => {
     assert(onUpdate.called);
     const doc = onUpdate.lastCall.args[0];
-    assert.equal(doc.id, document.id);
-    assert.equal(doc.foo, 'foo');
-    assert.isUndefined(doc.bar);
+    assert.equal(doc.id, documentA.id);
+    assert.equal(doc.a1, 'foo');
+    assert.isUndefined(doc.a2);
     onUpdate.resetHistory();
     assert.isFalse(onRemove.called);
   });
 
   it('can update', async () => {
-    await document.update({bar: 5});
+    await documentA.update({a2: 5});
   });
 
   it('calls callback', () => {
     assert(onUpdate.called);
     const doc = onUpdate.lastCall.args[0];
-    assert.equal(doc.id, document.id);
-    assert.equal(doc.foo, 'foo');
-    assert.equal(doc.bar, 5);
+    assert.equal(doc.id, documentA.id);
+    assert.equal(doc.a1, 'foo');
+    assert.equal(doc.a2, 5);
     onUpdate.resetHistory();
     assert.isFalse(onRemove.called);
   });
 
   it('can remove', async () => {
-    await document.remove();
+    await documentA.remove();
   });
 
   it('calls callback', () => {
     assert(onRemove.called);
-    assert.deepEqual(onRemove.lastCall.args, [document.id]);
+    assert.deepEqual(onRemove.lastCall.args, [documentA.id]);
     onRemove.resetHistory();
     assert.isFalse(onUpdate.called);
   });
@@ -182,15 +185,15 @@ describe('Collection', () => {
     await unsubscribe();
   });
 
-  let collection2: Collection<ChildDocument>;
+  let documentB: DocumentB;
   it('can get chlid collection', async () => {
-    document = await collection1.add({foo: 'f'});
-    collection2 = document.child;
-    assert.instanceOf(collection2, Collection);
+    documentB = await collectionB.add({b1: 'f'});
+    collectionA = documentB.child;
+    assert.instanceOf(collectionA, Collection);
   });
 
   it('can subscribe child collection', async () => {
-    unsubscribe = await collection2.subscribeCollection(onUpdate, onRemove);
+    unsubscribe = await collectionA.subscribeCollection(onUpdate, onRemove);
   });
 
   it('does not call callback', () => {
@@ -198,27 +201,26 @@ describe('Collection', () => {
     assert.isFalse(onUpdate.called);
   });
 
-  let document2: ChildDocument;
   it('can add', async () => {
-    document2 = await collection2.add({baz: 1});
+    documentA = await collectionA.add({a1: 'baz'});
   });
 
   it('returns document', () => {
-    assert.isDefined(document2.id);
-    assert.equal(document2.baz, 1);
+    assert.isDefined(documentA.id);
+    assert.equal(documentA.a1, 'baz');
   });
 
   it('calls callback', () => {
     assert(onUpdate.called);
     const doc = onUpdate.lastCall.args[0];
-    assert.equal(doc.id, document2.id);
-    assert.equal(doc.baz, 1);
+    assert.equal(doc.id, documentA.id);
+    assert.equal(doc.a1, 'baz');
     onUpdate.resetHistory();
     assert.isFalse(onRemove.called);
   });
 
   it('can remove', async () => {
-    await document2.remove();
+    await documentA.remove();
   });
 
   it('can unsubscribe', async () => {

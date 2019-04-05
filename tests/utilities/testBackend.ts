@@ -4,372 +4,227 @@ import shortid from 'shortid';
 import {fake} from 'sinon';
 import Backend, {Unsubscribe} from '../../client/backend/Backend';
 import {ForbiddenError} from '../../client/backend/BackendError';
-import { EmptyPathError } from '../../common/Path';
+import { EmptyPathError, CollectionPath, DocumentPath, getId, getDocumentPath } from '../../common/Path';
 
-export default function testBackend(backend: Backend) {
-  describe('value', () => {
-    describe('simple collection', () => {
-      const collection = 'nekord-test-value-simple-collection';
+const collectionA = 'nekord-test-a';
+const collectionB = 'nekord-test-b';
+const collectionX = 'nekord-test-x';
+
+function getParentPath(nested: boolean) : DocumentPath {
+  return nested ? [{collection: collectionB, id: shortid()}] : [];
+}
+
+function teestDocument(backend: Backend, nested: boolean): void {
+  let unsubscribe: Unsubscribe;
+
+  const callback = fake();
+  const parentPath = getParentPath(nested);
+  const documentPath =  [
+    ...parentPath,
+    {collection: collectionA, id: shortid()},
+  ];
+  const id = getId(documentPath);
+
+  it('can subscribe document', async () => {
+    unsubscribe = await backend.subscribeDocument(documentPath, callback);
+  });
+
+  it('can update', async () => {
+    if (nested) await backend.update(parentPath, {foo: 'bar'});
+    await backend.update(documentPath, {foo: 'foo'});
+  });
+
+  it('calls callback', async () => {
+    assert(callback.called);
+    assert.deepEqual(callback.lastCall.args, [id, {foo: 'foo'}]);
+    callback.resetHistory();
+  });
+
+  it('can unsubscribe', async () => {
+    await unsubscribe();
+  });
+
+  it('can subscribe again', async () => {
+    unsubscribe = await backend.subscribeDocument(documentPath, callback);
+  });
+
+  it('calls callback', async () => {
+    assert(callback.called);
+    assert.deepEqual(callback.lastCall.args, [id, {foo: 'foo'}]);
+    callback.resetHistory();
+  });
+
+  it('can remove', async () => {
+    await backend.remove(documentPath);
+  });
+
+  it('calls callback', async () => {
+    assert(callback.called);
+    assert.deepEqual(callback.lastCall.args, [id, undefined]);
+    callback.resetHistory();
+  });
+
+  if (nested) {
+    it('can remove', async () => {
+      await backend.remove(parentPath);
+    });
+  }
+
+  it('can unsubscribe', async () => {
+    await unsubscribe();
+  });
+}
+
+function testCollection(backend: Backend, nested: boolean): void {
+  let unsubscribe: Unsubscribe;
+
+  const callback = fake();
+  const parentPath = getParentPath(nested);
+  const collectionPath = {
+    parentPath,
+    collection: collectionA,
+  };
+
+  it('can subscribe', async () => {
+    unsubscribe = await backend.subscribeCollection(collectionPath, callback);
+  });
+
+  let id: string;
+  it('can add item', async () => {
+    if (nested) await backend.update(parentPath, {baz: 1});
+    id = await backend.add(collectionPath, {foo: 'bar'});
+  });
+
+  it('calls callback', () => {
+    assert(callback.called);
+    assert.deepEqual(callback.lastCall.args, [id, {foo: 'bar'}]);
+    callback.resetHistory();
+  });
+
+  let documentPath: DocumentPath;
+  it('can update item', async () => {
+    documentPath = getDocumentPath(collectionPath, id);
+    await backend.update(documentPath, {foo: 'baz'});
+  });
+
+  it('calls callback', () => {
+    assert(callback.called);
+    assert.deepEqual(callback.lastCall.args, [id, {foo: 'baz'}]);
+    callback.resetHistory();
+  });
+
+  it('can remove item', async () => {
+    await backend.remove(documentPath);
+  });
+
+  it('calls callback', () => {
+    assert.deepEqual(callback.lastCall.args, [id, undefined]);
+    callback.resetHistory();
+  });
+
+  it('can unsubscribe', async () => {
+    await unsubscribe();
+  });
+
+  let ids: string[];
+  it('can add item', async () => {
+    ids = await Promise.all([
+      backend.add(collectionPath,{foo: 'a'}),
+      backend.add(collectionPath,{foo: 'b'}),
+      backend.add(collectionPath,{foo: 'c'}),
+    ]);
+  });
+
+  it('can subscribe again', async () => {
+    unsubscribe = await backend.subscribeCollection(collectionPath, callback);
+  });
+
+  it('calls callback', async () => {
+    assert(callback.called);
+    const ids = callback.getCalls().map((call) => call.args[0]).sort();
+    assert.deepEqual(uniq(ids), ids.sort());
+    callback.resetHistory();
+  });
+
+  it('can remove', async () => {
+    await Promise.all(ids.map(id => backend.remove(getDocumentPath(collectionPath, id))));
+  });
+
+  it('can unsubscribe', async () => {
+    await unsubscribe();
+  });
+
+  if (nested) {
+    it('can remove', async () => {
+      await backend.remove(parentPath);
+    });
+  }
+}
+
+function testError(backend: Backend): void {
+  describe('error', () => {
+    describe('ForbiddenError', () => {
+      const collection = collectionX;
       const id = shortid();
-
-      const path = [{collection, id}];
-      const callback = fake();
-      let unsubscribe: Unsubscribe;
-      it('can subscribe', async () => {
-        unsubscribe = await backend.subscribeDocument(path, callback);
+      it('throws in update', () => {
+        return assert.isRejected(
+          backend.update([{collection, id}], {foo: 'bar'}),
+          ForbiddenError,
+        );
       });
 
-      it('can update', async () => {
-        await backend.update(path, {foo: 'bar'});
+      it('throws in add', () => {
+        return assert.isRejected(
+          backend.add({parentPath: [], collection}, {foo: 'bar'}),
+          ForbiddenError,
+        );
       });
 
-      it('calls callback', () => {
-        assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, [id, {foo: 'bar'}]);
-        callback.resetHistory();
+      it('throws in remove', () => {
+        return assert.isRejected(
+          backend.remove([{collection, id}]),
+          ForbiddenError,
+        );
       });
 
-      it('can unsubscribe', async () => {
-        await unsubscribe();
+      it('throws in subscribeDocument', () => {
+        return assert.isRejected(
+          backend.subscribeDocument([{collection, id}], fake()),
+          ForbiddenError,
+        );
       });
 
-      it('can update', async () => {
-        await backend.update(path, {foo: 'baz'});
-      });
-
-      it('does not calls callback', async () => {
-        assert.isFalse(callback.called);
-      });
-
-      it('can subscribe value again', async () => {
-        unsubscribe = await backend.subscribeDocument(path, callback);
-      });
-
-      it('calls callback', async () => {
-        assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, [id, {foo: 'baz'}]);
-        callback.resetHistory();
-      });
-
-      it('can remove', async () => {
-        await backend.remove(path);
-      });
-
-      it('calls callback', async () => {
-        assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, [id, undefined]);
-      });
-
-      it('can unsubscribe', async () => {
-        await unsubscribe();
+      it('throws in subscribeCollection', () => {
+        return assert.isRejected(
+          backend.subscribeCollection({parentPath: [], collection}, fake()),
+          ForbiddenError,
+        );
       });
     });
 
-    describe('nested collection', () => {
-      const callback = fake();
-      let unsubscribe: Unsubscribe;
-      const collection1 = 'nekord-test-value-nested-collection-1';
-      const id1 = shortid();
-      const parentPath = [{collection: collection1, id: id1}]
-      const collection2 = 'nekord-test-value-nested-collection-2';
-      const id2 = shortid();
-      const itemPath = [
-        ...parentPath,
-        {collection: collection2, id: id2},
-      ];
-      it('can subscribe', async () => {
-        unsubscribe = await backend.subscribeDocument(
-          itemPath,
-          callback,
+    describe('EmptyPathError', () => {
+      it('throws in update', () => {
+        return assert.isRejected(
+          backend.update([], {foo: 'bar'}),
+          EmptyPathError,
         );
-      });
-
-      it('can update', async () => {
-        await backend.update(parentPath, {foo: 'bar'});
-        await backend.update(
-          itemPath,
-          {foo: 'baz'},
-        );
-      });
-
-      it('calls callback', async () => {
-        assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, [id2, {foo: 'baz'}]);
-        callback.resetHistory();
-      });
-
-      it('can unsubscribe', async () => {
-        await unsubscribe();
-      });
-
-      it('can subscribe value again', async () => {
-        unsubscribe = await backend.subscribeDocument(
-          itemPath,
-          callback,
-        );
-      });
-
-      it('calls callback', async () => {
-        assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, [id2, {foo: 'baz'}]);
-        callback.resetHistory();
-        await unsubscribe();
-      });
-
-      it('can remove', async () => {
-        await backend.remove(itemPath);
-        await backend.remove(parentPath);
       });
     });
   });
+}
 
-  describe('children', () => {
-    describe('simple collection', () => {
-      const callback = fake();
-      let unsubscribe: Unsubscribe;
-      const collection = 'nekord-test-children-simple-collection';
-      it('can subscribe', async () => {
-        unsubscribe = await backend.subscribeCollection(
-          {parentPath: [], collection},
-          callback,
-        );
-      });
-
-      let id: string;
-      it('can add item', async () => {
-        id = await backend.add(
-          {parentPath: [], collection},
-          {foo: 'bar'},
-        );
-      });
-
-      it('calls callback', () => {
-        assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, [id, {foo: 'bar'}]);
-        callback.resetHistory();
-      });
-
-      it('can update item', async () => {
-        await backend.update([{collection, id}], {foo: 'baz'});
-      });
-
-      it('calls callback', () => {
-        assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, [id, {foo: 'baz'}]);
-        callback.resetHistory();
-      });
-
-      it('can remove item', async () => {
-        await backend.remove([{collection, id}]);
-      });
-
-      it('calls callback', () => {
-        assert.deepEqual(callback.lastCall.args, [id, undefined]);
-        callback.resetHistory();
-      });
-
-      it('can unsubscribe', async () => {
-        await unsubscribe();
-      });
-
-      let id1: string;
-      let id2: string;
-      let id3: string;
-      it('can add item', async () => {
-        id1 = await backend.add(
-          {parentPath: [], collection},
-          {foo: 'a'},
-        );
-        id2 = await backend.add(
-          {parentPath: [], collection},
-          {foo: 'b'},
-        );
-        id3 = await backend.add(
-          {parentPath: [], collection},
-          {foo: 'c'},
-        );
-      });
-
-      it('can subscribe again', async () => {
-        unsubscribe = await backend.subscribeCollection(
-          {parentPath: [], collection},
-          callback,
-        );
-      });
-
-      it('calls callback', async () => {
-        assert(callback.called);
-        const ids = callback.getCalls().map((call) => call.args[0]).sort();
-        assert.deepEqual(uniq(ids), [id1, id2, id3].sort());
-        callback.resetHistory();
-      });
-
-      it('can remove', async () => {
-        await backend.remove([{collection, id: id1}]);
-        await backend.remove([{collection, id: id2}]);
-        await backend.remove([{collection, id: id3}]);
-      });
-
-      it('can unsubscribe', async () => {
-        await unsubscribe();
-      });
-    });
-
-    describe('nested collection', () => {
-      const collection1 = 'nekord-test-children-nested-collection-1';
-      const collection2 = 'nekord-test-children-nested-collection-2';
-      const id4 = shortid();
-      const parentPath = [
-        {collection: collection1, id: id4},
-      ];
-      const collectionPath = {parentPath, collection: collection2};
-      const callback = fake();
-      let unsubscribe: Unsubscribe;
-      it('can subscribe', async () => {
-        await backend.update(parentPath, {bar: 'bar'});
-        unsubscribe = await backend.subscribeCollection(
-          collectionPath,
-          callback,
-        );
-      });
-
-      let id: string;
-      it('can add item', async () => {
-        id = await backend.add(
-          collectionPath,
-          {foo: 'bar'},
-        );
-      });
-
-      it('calls callback', () => {
-        assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, [id, {foo: 'bar'}]);
-        callback.resetHistory();
-      });
-
-      it('can update item', async () => {
-        await backend.update(
-          [...parentPath, {collection: collection2, id}],
-          {foo: 'baz'},
-        );
-      });
-
-      it('calls callback', () => {
-        assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, [id, {foo: 'baz'}]);
-        callback.resetHistory();
-      });
-
-      it('can remove item', async () => {
-        await backend.remove([...parentPath, {collection: collection2, id}]);
-      });
-
-      it('calls callback', () => {
-        assert(callback.called);
-        assert.deepEqual(callback.lastCall.args, [id, undefined]);
-        callback.resetHistory();
-      });
-
-      it('can unsubscribe', async () => {
-        await unsubscribe();
-      });
-
-      let id1: string;
-      let id2: string;
-      let id3: string;
-      it('can add item', async () => {
-        id1 = await backend.add(
-          collectionPath,
-          {foo: 'a'},
-        );
-        id2 = await backend.add(
-          collectionPath,
-          {foo: 'b'},
-        );
-        id3 = await backend.add(
-          collectionPath,
-          {foo: 'c'},
-        );
-      });
-
-      it('can subscribe again', async () => {
-        unsubscribe = await backend.subscribeCollection(
-          collectionPath,
-          callback,
-        );
-      });
-
-      it('calls callback', () => {
-        assert(callback.called);
-        const ids = callback.getCalls().map((call) => call.args[0]).sort();
-        assert.deepEqual(uniq(ids), [id1, id2, id3].sort());
-        callback.resetHistory();
-      });
-
-      it('can remove', async () => {
-        await backend.remove(
-          [...parentPath, {collection: collection2, id: id1}],
-        );
-        await backend.remove(
-          [...parentPath, {collection: collection2, id: id2}],
-        );
-        await backend.remove(
-          [...parentPath, {collection: collection2, id: id3}],
-        );
-        await backend.remove(parentPath);
-      });
-
-      it('can unsubscribe', async () => {
-        await unsubscribe();
-      });
+export default function testBackend(backend: Backend): void {
+  describe('document subscription', () => {
+    teestDocument(backend, false);
+    describe('nested', () => {
+      teestDocument(backend, true);
     });
   });
 
-  describe('ForbiddenError', () => {
-    const collection = 'nekord-test-forbidden-collection';
-    const id = shortid();
-    it('throws in update', () => {
-      return assert.isRejected(
-        backend.update([{collection, id}], {foo: 'bar'}),
-        ForbiddenError,
-      );
-    });
-
-    it('throws in add', () => {
-      return assert.isRejected(
-        backend.add({parentPath: [], collection}, {foo: 'bar'}),
-        ForbiddenError,
-      );
-    });
-
-    it('throws in remove', () => {
-      return assert.isRejected(
-        backend.remove([{collection, id}]),
-        ForbiddenError,
-      );
-    });
-
-    it('throws in subscribeDocument', () => {
-      return assert.isRejected(
-        backend.subscribeDocument([{collection, id}], fake()),
-        ForbiddenError,
-      );
-    });
-
-    it('throws in subscribeCollection', () => {
-      return assert.isRejected(
-        backend.subscribeCollection({parentPath: [], collection}, fake()),
-        ForbiddenError,
-      );
-    });
-  });
-
-  describe('EmptyPathError', () => {
-    it('throws in update', () => {
-      return assert.isRejected(
-        backend.update([], {foo: 'bar'}),
-        EmptyPathError,
-      );
+  describe('collection subscription', () => {
+    testCollection(backend, false);
+    describe('nested', () => {
+      testCollection(backend, true);
     });
   });
 }

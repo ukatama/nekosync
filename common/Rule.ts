@@ -1,16 +1,24 @@
 import pathToRegexp from 'path-to-regexp';
 import {DocumentPath, CollectionPath, encodePath} from './Path';
 
+export interface Reader {
+  get(path: DocumentPath): Promise<object | undefined>;
+  list(path: CollectionPath): Promise<object[]>;
+  getUserId(): Promise<string | undefined>;
+}
+
+export type RuleFunction = (path: DocumentPath, reader: Reader) => Promise<boolean>;
+
 export default interface Rule {
   path: string;
-  read: boolean;
-  write: boolean;
+  read: boolean | RuleFunction;
+  write: boolean | RuleFunction;
 }
 
 export interface CompiledRule {
   regexp: RegExp;
-  read: boolean;
-  write: boolean;
+  read: boolean | RuleFunction;
+  write: boolean | RuleFunction;
 }
 
 /**
@@ -31,12 +39,14 @@ export function compile(rules: Rule[]): CompiledRule[] {
  * @param {DocumentPath | CollectionPath} path - Path
  * @Param {CompiledRule[]} rules - Rules
  * @param {'read' | 'write'} mode - Mode to access
+ * @param {Reader} reader - Data reader
  * @return {Promise<boolean>} - Result
  */
 export async function authorize(
   path: DocumentPath | CollectionPath,
   rules: CompiledRule[],
   mode: 'read' | 'write',
+  reader: Reader,
 ): Promise<boolean> {
   const documentPath = Array.isArray(path)
     ? path
@@ -45,6 +55,10 @@ export async function authorize(
   const rule = rules.find(
     (rule) => rule.regexp.exec(encodedPath) !== null,
   );
-  if (!rule || !rule[mode]) return false;
-  return true;
+  if (!rule) return false;
+
+  const allow = rule[mode];
+  if (typeof allow === 'boolean') return allow;
+
+  return await allow(documentPath, reader);
 }

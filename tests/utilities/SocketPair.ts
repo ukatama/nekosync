@@ -1,7 +1,10 @@
 import {EventEmitter} from 'events';
+import shortid from 'shortid';
+import Socket from '../../common/Socket';
 
-class Socket extends EventEmitter {
-  public pair?: Socket;
+class StubSocket extends EventEmitter implements Socket {
+  public readonly id: string = shortid();
+  public pair?: StubSocket;
 
   public emit(event: string, ...args: any): boolean {
     if (!this.pair) throw new Error();
@@ -14,8 +17,8 @@ class Socket extends EventEmitter {
 }
 
 export default class SocketPair {
-  public client = new Socket();
-  public server = new Socket();
+  public client = new StubSocket();
+  public server = new StubSocket();
 
   public constructor() {
     this.client.pair = this.server;
