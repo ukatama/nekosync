@@ -31,15 +31,15 @@ export interface AttributeOptions {
  * @return {PropertyDecorator} - Decorator
  */
 export function attribute(options: AttributeOptions = {}): PropertyDecorator {
-  return (target, propertyKey) => {
-    if ((target as any).attributes === undefined) {
+  return (target: {attributes?: object}, propertyKey) => {
+    if (target.attributes === undefined) {
       Object.defineProperty(target, 'attributes', {
         configurable: false,
         enumerable: false,
         value: {},
       });
     }
-    Object.defineProperty((target as any).attributes, propertyKey, {
+    Object.defineProperty(target.attributes, propertyKey, {
       configurable: false,
       enumerable: true,
       value: options,
@@ -57,7 +57,7 @@ export function collection<D>(
   DocumentClass: DocumentClassOf<D>,
   name: string,
 ): PropertyDecorator {
-  return (target: any, propertyKey) => {
+  return (target, propertyKey) => {
     Object.defineProperty(target, propertyKey, {
       configurable: false,
       enumerable: true,
@@ -97,6 +97,7 @@ export default class Document<A extends {}> {
     if (attributes) {
       Object.keys(attributes).forEach((attributeName) => {
         const {required} = attributes[attributeName];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const attributeValue = (value as any)[attributeName];
         if (required && attributeValue === undefined) {
           throw new MissingAttributeError(attributeName);

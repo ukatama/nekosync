@@ -34,7 +34,7 @@ export default class MemoryBackend extends Backend {
 
   /**
    * Get value
-   * @param path - Path for collection
+   * @param {DocumentPath} path - Path for collection
    * @return {object | undefined} - Value
    */
   public get(path: DocumentPath): object | undefined {
@@ -54,7 +54,7 @@ export default class MemoryBackend extends Backend {
         if (!match) return undefined;
         return [match[1], this.store[key]];
       })
-      .filter(a => a !== undefined) as [string, object][];
+      .filter((a) => a !== undefined) as [string, object][];
   }
 
   /**
@@ -68,7 +68,7 @@ export default class MemoryBackend extends Backend {
   ): Promise<void> {
     const result = await authorize(path, this.rules, mode, {
       get: async (path) => this.get(path),
-      list: async (path) => this.list(path).map(a => a[1]),
+      list: async (path) => this.list(path).map((a) => a[1]),
       async getUserId() {
         return UserId;
       },

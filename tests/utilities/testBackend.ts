@@ -4,7 +4,9 @@ import shortid from 'shortid';
 import {fake} from 'sinon';
 import Backend, {Unsubscribe} from '../../client/backend/Backend';
 import {ForbiddenError} from '../../client/backend/BackendError';
-import { EmptyPathError, CollectionPath, DocumentPath, getId, getDocumentPath } from '../../common/Path';
+import {
+  EmptyPathError, DocumentPath, getId, getDocumentPath,
+} from '../../common/Path';
 
 const collectionA = 'nekord-test-a';
 const collectionB = 'nekord-test-b';
@@ -12,7 +14,7 @@ const collectionC = 'nekord-test-c';
 const collectionD = 'nekord-test-d';
 const collectionX = 'nekord-test-x';
 
-function getParentPath(nested: boolean) : DocumentPath {
+function getParentPath(nested: boolean): DocumentPath {
   return nested ? [{collection: collectionB, id: shortid()}] : [];
 }
 
@@ -21,7 +23,7 @@ function teestDocument(backend: Backend, nested: boolean): void {
 
   const callback = fake();
   const parentPath = getParentPath(nested);
-  const documentPath =  [
+  const documentPath = [
     ...parentPath,
     {collection: collectionA, id: shortid()},
   ];
@@ -131,9 +133,9 @@ function testCollection(backend: Backend, nested: boolean): void {
   let ids: string[];
   it('can add item', async () => {
     ids = await Promise.all([
-      backend.add(collectionPath,{foo: 'a'}),
-      backend.add(collectionPath,{foo: 'b'}),
-      backend.add(collectionPath,{foo: 'c'}),
+      backend.add(collectionPath, {foo: 'a'}),
+      backend.add(collectionPath, {foo: 'b'}),
+      backend.add(collectionPath, {foo: 'c'}),
     ]);
   });
 
@@ -143,13 +145,15 @@ function testCollection(backend: Backend, nested: boolean): void {
 
   it('calls callback', async () => {
     assert(callback.called);
-    const ids = callback.getCalls().map((call) => call.args[0]).sort();
-    assert.deepEqual(uniq(ids), ids.sort());
+    const receivedIds = callback.getCalls().map((call) => call.args[0]).sort();
+    assert.deepEqual(uniq(receivedIds), ids.sort());
     callback.resetHistory();
   });
 
   it('can remove', async () => {
-    await Promise.all(ids.map(id => backend.remove(getDocumentPath(collectionPath, id))));
+    await Promise.all(
+      ids.map((id) => backend.remove(getDocumentPath(collectionPath, id))),
+    );
   });
 
   it('can unsubscribe', async () => {
@@ -219,34 +223,34 @@ function testRules(backend: Backend): void {
   describe('conditional rule', () => {
     const id = shortid();
     it('can update', async () => {
-      await backend.update([{ collection: collectionD, id}], {writable: true});
-      await backend.update([{ collection: collectionC, id}], {c: 'c'});
+      await backend.update([{collection: collectionD, id}], {writable: true});
+      await backend.update([{collection: collectionC, id}], {c: 'c'});
     });
 
     it('can not update', async () => {
-      await backend.update([{ collection: collectionD, id}], {writable: false});
+      await backend.update([{collection: collectionD, id}], {writable: false});
       await assert.isRejected(
-        backend.update([{ collection: collectionC, id}], {c: 'cc'}),
+        backend.update([{collection: collectionC, id}], {c: 'cc'}),
         ForbiddenError,
       );
     });
-    
+
     it('can not write', async () => {
-      await backend.remove([{ collection: collectionD, id}]);
+      await backend.remove([{collection: collectionD, id}]);
       await assert.isRejected(
-        backend.update([{ collection: collectionC, id}], {c: 'cc'}),
+        backend.update([{collection: collectionC, id}], {c: 'cc'}),
         ForbiddenError,
       );
       await assert.isRejected(
-        backend.remove([{ collection: collectionC, id}]),
+        backend.remove([{collection: collectionC, id}]),
         ForbiddenError,
       );
     });
 
     it('can remove', async () => {
-      await backend.update([{ collection: collectionD, id}], {writable: true});
-      await backend.remove([{ collection: collectionC, id}]);
-      await backend.remove([{ collection: collectionD, id}]);
+      await backend.update([{collection: collectionD, id}], {writable: true});
+      await backend.remove([{collection: collectionC, id}]);
+      await backend.remove([{collection: collectionD, id}]);
     });
   });
 }

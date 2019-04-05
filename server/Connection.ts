@@ -13,6 +13,9 @@ import Socket, {
   SocketErrorCode,
   SocketRequestEvent,
   SocketUpstreamEvent,
+  SnapshotMessage,
+  RequestMessage,
+  ResponseMessage,
 } from '../common/Socket';
 import Datastore from './datastore/Datastore';
 
@@ -69,22 +72,27 @@ export default class Connection {
       id: string,
       value: object | undefined,
     ) => {
-      this.socket.emit(SocketDownstreamEvent.Snapshot, path, id, value);
+      this.socket.emit<SnapshotMessage>(
+        SocketDownstreamEvent.Snapshot,
+        {path, id, value},
+      );
     };
 
     this.socket.on(
       SocketUpstreamEvent.Request,
-      async (requestId: string, event: SocketRequestEvent, ...args: any) => {
+      async (message: RequestMessage) => {
+        const {requestId, event, path, value} = message;
         try {
-          const result = await this.onRequest(event, ...args);
-          this.socket.emit(
+          const result = await this.onRequest(event, path, value);
+          this.socket.emit<ResponseMessage>(
             SocketDownstreamEvent.Response,
-            requestId,
-            undefined,
-            result,
+            {
+              requestId,
+              result,
+            },
           );
-        } catch (e) {
-          this.socket.emit(SocketDownstreamEvent.Response, requestId, e);
+        } catch (error) {
+          this.socket.emit(SocketDownstreamEvent.Response, {requestId, error});
         }
       },
     );
@@ -122,17 +130,18 @@ export default class Connection {
   /**
    * Request handler
    * @param {SocketRequestEvent} event - Event
-   * @param {any} args - Args
-   * @return {Promise<any>} - result
+   * @param {path} path - Path for document or colection
+   * @param {object | undefined} value - Value
+   * @return {Promise<string | undefined>} - result
    */
   private async onRequest(
     event: SocketRequestEvent,
-    ...args: any
-  ): Promise<any> {
+    path: DocumentPath | CollectionPath,
+    value?: object,
+  ): Promise<string | undefined> {
     switch (event) {
       case SocketRequestEvent.SubscribeDocument:
       case SocketRequestEvent.SubscribeCollection: {
-        const [path]: [DocumentPath | CollectionPath] = args;
         await this.authorize(path, 'read');
         const encodedPath = encodePath(path);
         this.subscriptionCounter[encodedPath]
@@ -142,20 +151,24 @@ export default class Connection {
         }
         if (Array.isArray(path)) {
           const value = await this.datastore.get(path);
-          this.socket.emit(
+          this.socket.emit<SnapshotMessage>(
             SocketDownstreamEvent.Snapshot,
-            path,
-            getId(path),
-            value,
+            {
+              path,
+              id: getId(path),
+              value,
+            },
           );
         } else {
           const values = await this.datastore.list(path);
           values.forEach(({id, value}) => {
-            this.socket.emit(
+            this.socket.emit<SnapshotMessage>(
               SocketDownstreamEvent.Snapshot,
-              path,
-              id,
-              value,
+              {
+                path,
+                id,
+                value,
+              },
             );
           });
         }
@@ -163,7 +176,6 @@ export default class Connection {
       }
       case SocketRequestEvent.UnsubscribeDocument:
       case SocketRequestEvent.UnsubscribeCollection: {
-        const [path]: [DocumentPath | CollectionPath] = args;
         await this.authorize(path, 'write');
         const encodedPath = encodePath(path);
         const count = this.subscriptionCounter[encodedPath] || 0;
@@ -176,21 +188,21 @@ export default class Connection {
         return undefined;
       }
       case SocketRequestEvent.Update: {
-        const [path, value]: [DocumentPath, object] = args;
+        if (!Array.isArray(path) || value === undefined) throw new Error();
         await this.authorize(path, 'write');
         const newValue = await this.datastore.update(path, value);
         this.emitUpdate(path, newValue);
         return undefined;
       }
       case SocketRequestEvent.Add: {
-        const [path, value]: [CollectionPath, object] = args;
+        if (Array.isArray(path) || value === undefined) throw new Error();
         await this.authorize(path, 'write');
         const id = await this.datastore.add(path, value);
         this.emitUpdate(getDocumentPath(path, id), value);
         return id;
       }
       case SocketRequestEvent.Remove: {
-        const [path]: [DocumentPath] = args;
+        if (!Array.isArray(path)) throw new Error();
         await this.authorize(path, 'write');
         await this.datastore.remove(path);
         this.emitUpdate(path, undefined);

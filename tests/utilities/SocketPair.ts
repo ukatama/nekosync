@@ -6,13 +6,13 @@ class StubSocket extends EventEmitter implements Socket {
   public readonly id: string = shortid();
   public pair?: StubSocket;
 
-  public emit(event: string, ...args: any): boolean {
+  public emit<T>(event: string, message: T): boolean {
     if (!this.pair) throw new Error();
-    return this.pair.emitSelf(event, ...args);
+    return this.pair.emitSelf(event, message);
   }
 
-  private emitSelf(event: string, ...args: any): boolean {
-    return super.emit(event, ...args);
+  private emitSelf<T>(event: string, message: T): boolean {
+    return super.emit(event, message);
   }
 }
 

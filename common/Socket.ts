@@ -1,9 +1,13 @@
+import {DocumentPath, CollectionPath} from './Path';
+
+export type Callback<T> = (payload: T) => void;
+
 export default interface Socket {
   id: string;
-  emit(event: string, ...args: any): void;
-  on(event: string, callback: (...args: any) => void): void;
-  once(event: string, callback: (...args: any) => void): void;
-  off(event: string, callback: (...args: any) => void): void;
+  emit<T>(event: string, payload: T): void;
+  on<T>(event: string, callback: Callback<T>): void;
+  once<T>(event: string, callback: Callback<T>): void;
+  off<T>(event: string, callback: Callback<T>): void;
 }
 
 export enum SocketUpstreamEvent {
@@ -27,4 +31,23 @@ export enum SocketRequestEvent {
 
 export enum SocketErrorCode {
   Forbidden,
+}
+
+export interface RequestMessage {
+  requestId: string;
+  event: SocketRequestEvent;
+  path: DocumentPath | CollectionPath;
+  value?: object;
+}
+
+export interface ResponseMessage {
+  requestId: string;
+  error?: object;
+  result?: string;
+}
+
+export interface SnapshotMessage {
+  path: DocumentPath | CollectionPath;
+  id: string;
+  value?: object;
 }

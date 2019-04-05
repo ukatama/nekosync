@@ -31,7 +31,11 @@ async function handleError<T>(block: () => Promise<T>): Promise<T> {
  */
 function filter(value: object | undefined): object | undefined {
   if (value === undefined) return value;
-  else if ((Removed in value) && (value as any)[Removed]) return undefined;
+  else if (
+    (Removed in value) && (value as {[Removed]?: typeof Removed})[Removed]
+  ) {
+    return undefined;
+  }
   return value;
 }
 

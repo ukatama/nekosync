@@ -2,7 +2,13 @@ import shortid from 'shortid';
 import {EventEmitter} from 'events';
 import {DocumentPath, CollectionPath, encodePath} from '../../common/Path';
 import Socket, {
-  SocketUpstreamEvent, SocketDownstreamEvent, SocketRequestEvent, SocketErrorCode,
+  SocketUpstreamEvent,
+  SocketDownstreamEvent,
+  SocketRequestEvent,
+  SocketErrorCode,
+  ResponseMessage,
+  SnapshotMessage,
+  RequestMessage,
 } from '../../common/Socket';
 import Backend, {Callback, Unsubscribe} from './Backend';
 import {ForbiddenError} from './BackendError';
@@ -25,18 +31,15 @@ export default class SocketBackend extends Backend {
 
     this.socket.on(
       SocketDownstreamEvent.Response,
-      (requestId: string, error: object | undefined, result: any) => {
-        this.requestEventBus.emit(requestId, error, result);
+      (message: ResponseMessage) => {
+        this.requestEventBus.emit(message.requestId, message);
       },
     );
+
     this.socket.on(
       SocketDownstreamEvent.Snapshot,
-      (
-        path: DocumentPath | CollectionPath,
-        id: string,
-        value: object | undefined,
-      ) => {
-        this.snapshotEventBus.emit(encodePath(path), id, value);
+      (message: SnapshotMessage) => {
+        this.snapshotEventBus.emit(encodePath(message.path), message);
       },
     );
   }
@@ -44,29 +47,40 @@ export default class SocketBackend extends Backend {
   /**
    * Send asynchronous request
    * @param {SocketRequestEvent} event - Action type
-   * @param {T} args - Args
-   * @return {Promise<U>} - response
+   * @param {DocumentPath | CollectionPath} path - Path
+   * @param {object | undefined} value - Value
+   * @return {Promise<string | undefined>} - response
    */
-  private request<T = void>(
+  private request<T, U = void>(
     event: SocketRequestEvent,
-    ...args: any
-  ): Promise<T> {
+    path: DocumentPath | CollectionPath,
+    value?: object,
+  ): Promise<string | undefined> {
     return new Promise((resolve, reject) => {
       const requestId = shortid();
+
       this.requestEventBus.once(
         requestId,
-        (error: object | undefined, result: T) => {
-          if (error) {
-            if ((error as any).code === SocketErrorCode.Forbidden) reject(new ForbiddenError())
-            else reject(error);
-          } else resolve(result);
+        (message: ResponseMessage) => {
+          if (message.error) {
+            if (
+              (message.error as {code?: SocketErrorCode}).code
+                === SocketErrorCode.Forbidden
+            ) {
+              reject(new ForbiddenError());
+            } else reject(message.error);
+          } else resolve(message.result);
         },
       );
-      this.socket.emit(
+
+      this.socket.emit<RequestMessage>(
         SocketUpstreamEvent.Request,
-        requestId,
-        event,
-        ...args,
+        {
+          requestId,
+          event,
+          path,
+          value,
+        },
       );
     });
   }
@@ -82,7 +96,9 @@ export default class SocketBackend extends Backend {
     callback: Callback,
   ): Promise<Unsubscribe> {
     const encodedPath = encodePath(path);
-    this.snapshotEventBus.on(encodedPath, callback);
+    this.snapshotEventBus.on(encodedPath, (message: SnapshotMessage) => {
+      callback(message.id, message.value);
+    });
     await this.request(
       SocketRequestEvent.SubscribeDocument,
       path,
@@ -107,7 +123,9 @@ export default class SocketBackend extends Backend {
     callback: Callback,
   ): Promise<Unsubscribe> {
     const encodedPath = encodePath(path);
-    this.snapshotEventBus.on(encodedPath, callback);
+    this.snapshotEventBus.on(encodedPath, (message: SnapshotMessage) => {
+      callback(message.id, message.value);
+    });
     await this.request(
       SocketRequestEvent.SubscribeCollection,
       path,
@@ -137,7 +155,8 @@ export default class SocketBackend extends Backend {
    * @return {Promise<string>} - Added id
    */
   public async add(path: CollectionPath, value: object): Promise<string> {
-    const id = await this.request<string>(SocketRequestEvent.Add, path, value);
+    const id = await this.request(SocketRequestEvent.Add, path, value);
+    if (!id) throw new TypeError();
     return id;
   }
 

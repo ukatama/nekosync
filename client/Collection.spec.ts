@@ -11,18 +11,18 @@ const CollectionA = 'nekord-test-a';
 const CollectionB = 'nekord-test-b';
 
 describe('Collection', () => {
-  class DocumentA extends Document<{a1: string, a2?: number}> {
-    @attribute({required: true}) a1!: string;
-    @attribute() a2?: number;
+  class DocumentA extends Document<{a1: string; a2?: number}> {
+    @attribute({required: true}) public a1!: string;
+    @attribute() public a2?: number;
   }
 
   class DocumentB extends Document<{b1: string}> {
-    @attribute({required: true}) b1!: string;
+    @attribute({required: true}) public b1!: string;
 
     @collection(
       DocumentA,
       CollectionA,
-    ) child!: Collection<DocumentA>
+    ) public child!: Collection<DocumentA>
   }
 
   const backend = new MemoryBackend(rules);

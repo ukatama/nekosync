@@ -1,6 +1,6 @@
 import {DocumentPath, getDocumentPath} from '../common/Path';
 import Backend, {Unsubscribe} from './backend/Backend';
-import Document, {AttributesOf, DocumentClassOf} from './Document';
+import {AttributesOf, DocumentClassOf} from './Document';
 
 export type UpdateCallback<D> = (document: D) => void;
 export type RemoveCallback = (id: string) => void;
@@ -90,7 +90,10 @@ export default class Collection<D> {
    * @param {string} id - id
    * @param {object} value - value
    */
-  public async update(id: string, value: Partial<AttributesOf<D>>): Promise<void> {
+  public async update(
+    id: string,
+    value: Partial<AttributesOf<D>>,
+  ): Promise<void> {
     await this.backend.update(
       [...this.parentPath, {collection: this.name, id}],
       value,
