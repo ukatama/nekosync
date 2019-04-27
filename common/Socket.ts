@@ -24,6 +24,8 @@ export enum SocketRequestEvent {
   SubscribeCollection = 'SubscribeCollection',
   UnsubscribeDocument = 'UnsubscribeDocument',
   UnsubscribeCollection = 'UnsubscribeCollection',
+  Get = 'Get',
+  List = 'List',
   Update = 'Update',
   Add = 'Add',
   Remove = 'Remove',
@@ -43,7 +45,8 @@ export interface RequestMessage {
 export interface ResponseMessage {
   requestId: string;
   error?: object;
-  result?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  result?: any;
 }
 
 export interface SnapshotMessage {

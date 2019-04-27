@@ -138,7 +138,8 @@ export default class Connection {
     event: SocketRequestEvent,
     path: DocumentPath | CollectionPath,
     value?: object,
-  ): Promise<string | undefined> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<any | undefined> {
     switch (event) {
       case SocketRequestEvent.SubscribeDocument:
       case SocketRequestEvent.SubscribeCollection: {
@@ -161,7 +162,7 @@ export default class Connection {
           );
         } else {
           const values = await this.datastore.list(path);
-          values.forEach(({id, value}) => {
+          values.forEach(([id, value]) => {
             this.socket.emit<SnapshotMessage>(
               SocketDownstreamEvent.Snapshot,
               {
@@ -187,6 +188,14 @@ export default class Connection {
         }
         return undefined;
       }
+      case SocketRequestEvent.Get:
+        if (!Array.isArray(path)) throw new TypeError();
+        await this.authorize(path, 'read');
+        return await this.datastore.get(path);
+      case SocketRequestEvent.List:
+        if (Array.isArray(path)) throw new TypeError();
+        await this.authorize(path, 'read');
+        return await this.datastore.list(path);
       case SocketRequestEvent.Update: {
         if (!Array.isArray(path) || value === undefined) {
           throw new TypeError('Invalid message');

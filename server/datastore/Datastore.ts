@@ -14,11 +14,11 @@ export default abstract class Datastore {
   /**
    * Get an document
    * @param {CollectionPath} path - Path for collection
-   * @return {{ id: string, value: object }[]} value - Values
+   * @return {[string, object][]} value - Values
    */
   public abstract list(
     path: CollectionPath,
-  ): Promise<{ id: string; value: object }[]>;
+  ): Promise<[string, object][]>;
 
   /**
    * Update an document

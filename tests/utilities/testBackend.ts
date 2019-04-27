@@ -1,5 +1,5 @@
 import {assert} from 'chai';
-import uniq from 'lodash/uniq';
+import _ from 'lodash';
 import shortid from 'shortid';
 import {fake} from 'sinon';
 import Backend, {Unsubscribe} from '../../client/backend/Backend';
@@ -111,6 +111,11 @@ function testCollection(backend: Backend, nested: boolean): void {
     await backend.update(documentPath, {foo: 'baz'});
   });
 
+  it('can get item', async () => {
+    const value = await backend.get(documentPath);
+    assert.deepEqual(value, {foo: 'baz'});
+  });
+
   it('calls callback', () => {
     assert(callback.called);
     assert.deepEqual(callback.lastCall.args, [id, {foo: 'baz'}]);
@@ -130,13 +135,20 @@ function testCollection(backend: Backend, nested: boolean): void {
     await unsubscribe();
   });
 
-  let ids: string[];
+  const ids: string[] = [];
   it('can add item', async () => {
-    ids = await Promise.all([
-      backend.add(collectionPath, {foo: 'a'}),
-      backend.add(collectionPath, {foo: 'b'}),
-      backend.add(collectionPath, {foo: 'c'}),
-    ]);
+    ids.push(await backend.add(collectionPath, {foo: 'a'}));
+    ids.push(await backend.add(collectionPath, {foo: 'b'}));
+    ids.push(await backend.add(collectionPath, {foo: 'c'}));
+  });
+
+  it('can list item', async () => {
+    const value = await backend.list(collectionPath);
+    assert.deepEqual(_.sortBy(value, (a) => a[0]), _.sortBy([
+      [ids[0], {foo: 'a'}],
+      [ids[1], {foo: 'b'}],
+      [ids[2], {foo: 'c'}],
+    ], (a) => a[0]));
   });
 
   it('can subscribe again', async () => {
@@ -145,8 +157,8 @@ function testCollection(backend: Backend, nested: boolean): void {
 
   it('calls callback', async () => {
     assert(callback.called);
-    const receivedIds = callback.getCalls().map((call) => call.args[0]).sort();
-    assert.deepEqual(uniq(receivedIds), ids.sort());
+    const receivedIds = callback.getCalls().map((call) => call.args[0]);
+    assert.deepEqual(_.uniq(receivedIds.sort()), ids.slice().sort());
     callback.resetHistory();
   });
 

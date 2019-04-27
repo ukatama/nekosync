@@ -140,6 +140,32 @@ export default class SocketBackend extends Backend {
   }
 
   /**
+   * Get a value of document
+   * @param {DocumentPath} path - Path for document
+   * @return {object | undefined} Value
+   */
+  public async get(path: DocumentPath): Promise<object | undefined> {
+    const result = await this.request(SocketRequestEvent.Get, path);
+    if (typeof result !== 'undefined' && typeof result !== 'object') {
+      throw new TypeError();
+    }
+    return result;
+  }
+
+  /**
+   * List values of collection
+   * @param {CollectionPath} path - Path for collection
+   * @return {[string, object][]} Values
+   */
+  public async list(path: CollectionPath): Promise<[string, object][]> {
+    const result = await this.request(SocketRequestEvent.List, path);
+    if (!Array.isArray(result)) {
+      throw new TypeError();
+    }
+    return result;
+  }
+
+  /**
    * Update an document
    * @param {DocumentPath} path - Path for document
    * @param {object} value - Value
@@ -156,7 +182,7 @@ export default class SocketBackend extends Backend {
    */
   public async add(path: CollectionPath, value: object): Promise<string> {
     const id = await this.request(SocketRequestEvent.Add, path, value);
-    if (!id) throw new TypeError();
+    if (typeof id !== 'string') throw new TypeError();
     return id;
   }
 

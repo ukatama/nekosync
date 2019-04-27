@@ -159,6 +159,32 @@ export default class FirebaseBackend extends Backend {
   }
 
   /**
+   * Get a value of document
+   * @param {DocumentPath} path - Path for document
+   * @return {object} Value
+   */
+  public async get(path: DocumentPath): Promise<object | undefined> {
+    const snapshot = await handleError(async () => {
+      const document = getDocument(this.firestore, path);
+      return await document.get();
+    });
+    return snapshot.data();
+  }
+
+  /**
+   * List values of collection
+   * @param {CollectionPath} path - Path for collection
+   * @return {[string, object][]} Values
+   */
+  public async list(path: CollectionPath): Promise<[string, object][]> {
+    const snapshot = await handleError(async () => {
+      const collection = getCollection(this.firestore, path);
+      return await collection.get();
+    });
+    return snapshot.docs.map((s) => [s.id, s.data()]);
+  }
+
+  /**
    * Update an document
    * @param {DocumentPath} path - Path for document
    * @param {object} value - Value

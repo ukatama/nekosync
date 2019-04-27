@@ -27,18 +27,15 @@ export default class MemoryDatastore extends Datastore {
    */
   public async list(
     path: CollectionPath,
-  ): Promise<{ id: string; value: object }[]> {
+  ): Promise<[string, object][]> {
     const encodedPath = encodePath(path);
     return Object.keys(this.store)
       .map((key) => {
         const m = key.match(new RegExp(`^${encodedPath}/([^/]+)$`));
         if (!m) return null;
-        return {
-          id: m[1],
-          value: this.store[key],
-        };
+        return [m[1], this.store[key]];
       })
-      .filter((a) => a) as { id: string; value: object }[];
+      .filter((a) => a !== null) as [string, object][];
   }
 
   /**

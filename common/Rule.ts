@@ -7,7 +7,7 @@ import {
 
 export interface Reader {
   get(path: DocumentPath): Promise<object | undefined>;
-  list(path: CollectionPath): Promise<object[]>;
+  list(path: CollectionPath): Promise<[string, object][]>;
   getUserId(): Promise<string | undefined>;
 }
 

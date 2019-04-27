@@ -53,22 +53,20 @@ export default class MongoDatastore {
   /**
    * Get an document
    * @param {CollectionPath} path - Path for collection
-   * @return {{ id: string, value: object }[]} value - Values
+   * @return {[string, object][]} value - Values
    */
   public async list(
     path: CollectionPath,
-  ): Promise<{ id: string; value: object }[]> {
+  ): Promise<[string, object][]> {
     const collection = this.getCollection(path);
     const encodedPath = encodePath(path);
     const items = await collection.find(
       {path: {$regex: `^${encodedPath}/[^/]+$`}},
     ).toArray();
-    return items.map(
-      (value) => ({
-        id: value.path.substr(encodedPath.length + 1),
-        value: omit(value, ['path', '_id']),
-      }),
-    );
+    return items.map((value) => [
+      value.path.substr(encodedPath.length + 1),
+      omit(value, ['path', '_id']),
+    ]);
   }
 
   /**
