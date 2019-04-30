@@ -1,4 +1,4 @@
-import {DocumentPath, CollectionPath} from './Path';
+import { DocumentPath, CollectionPath } from './Path';
 
 export type Callback<T> = (payload: T) => void;
 

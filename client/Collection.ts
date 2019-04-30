@@ -1,6 +1,6 @@
-import {DocumentPath, getDocumentPath} from '../common/Path';
-import Backend, {Unsubscribe} from './backend/Backend';
-import {AttributesOf, DocumentClassOf} from './Document';
+import { DocumentPath, getDocumentPath } from '../common/Path';
+import Backend, { Unsubscribe } from './backend/Backend';
+import { AttributesOf, DocumentClassOf } from './Document';
 
 export type UpdateCallback<D> = (document: D) => void;
 export type RemoveCallback = (id: string) => void;
@@ -27,8 +27,7 @@ export default class Collection<D> {
     name: string,
     parentPath: DocumentPath = [],
   ) {
-    this.DocumentClass = DocumentClass,
-    this.backend = backend;
+    (this.DocumentClass = DocumentClass), (this.backend = backend);
     this.name = name;
     this.parentPath = parentPath;
   }
@@ -45,7 +44,7 @@ export default class Collection<D> {
     onUpdate: UpdateCallback<D>,
     onRemove: RemoveCallback,
   ): Promise<Unsubscribe> {
-    const path = [...this.parentPath, {collection: this.name, id}];
+    const path = [...this.parentPath, { collection: this.name, id }];
     const unsubscribe = await this.backend.subscribeDocument(
       path,
       (id, value) => {
@@ -66,7 +65,7 @@ export default class Collection<D> {
     onUpdate: UpdateCallback<D>,
     onRemove: RemoveCallback,
   ): Promise<Unsubscribe> {
-    const path = {parentPath: this.parentPath, collection: this.name};
+    const path = { parentPath: this.parentPath, collection: this.name };
     const unsubscribe = await this.backend.subscribeCollection(
       path,
       (id, value) => {
@@ -95,7 +94,7 @@ export default class Collection<D> {
     value: Partial<AttributesOf<D>>,
   ): Promise<void> {
     await this.backend.update(
-      [...this.parentPath, {collection: this.name, id}],
+      [...this.parentPath, { collection: this.name, id }],
       value,
     );
   }
@@ -106,12 +105,12 @@ export default class Collection<D> {
    */
   public async add(value: AttributesOf<D>): Promise<D> {
     const id = await this.backend.add(
-      {parentPath: this.parentPath, collection: this.name},
+      { parentPath: this.parentPath, collection: this.name },
       value,
     );
     return new this.DocumentClass(
       this.backend,
-      [...this.parentPath, {collection: this.name, id}],
+      [...this.parentPath, { collection: this.name, id }],
       value,
     );
   }

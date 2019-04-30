@@ -1,6 +1,6 @@
 import merge from 'lodash/merge';
 import omit from 'lodash/omit';
-import {Collection, Db} from 'mongodb';
+import { Collection, Db } from 'mongodb';
 import shortid from 'shortid';
 import {
   CollectionPath,
@@ -30,10 +30,9 @@ export default class MongoDatastore {
    * @return {Collection} - Collection
    */
   private getCollection(path: CollectionPath): Collection {
-    return this.db.collection([
-      ...path.parentPath.map((e) => e.collection),
-      path.collection,
-    ].join('/'));
+    return this.db.collection(
+      [...path.parentPath.map(e => e.collection), path.collection].join('/'),
+    );
   }
 
   /**
@@ -43,9 +42,7 @@ export default class MongoDatastore {
    */
   public async get(path: DocumentPath): Promise<object | undefined> {
     const collection = this.getCollection(getCollectionPath(path));
-    const value = await collection.findOne(
-      {path: encodePath(path)},
-    );
+    const value = await collection.findOne({ path: encodePath(path) });
     if (value === null) return undefined;
     return omit(value, ['path', '_id']);
   }
@@ -55,15 +52,13 @@ export default class MongoDatastore {
    * @param {CollectionPath} path - Path for collection
    * @return {[string, object][]} value - Values
    */
-  public async list(
-    path: CollectionPath,
-  ): Promise<[string, object][]> {
+  public async list(path: CollectionPath): Promise<[string, object][]> {
     const collection = this.getCollection(path);
     const encodedPath = encodePath(path);
-    const items = await collection.find(
-      {path: {$regex: `^${encodedPath}/[^/]+$`}},
-    ).toArray();
-    return items.map((value) => [
+    const items = await collection
+      .find({ path: { $regex: `^${encodedPath}/[^/]+$` } })
+      .toArray();
+    return items.map(value => [
       value.path.substr(encodedPath.length + 1),
       omit(value, ['path', '_id']),
     ]);
@@ -80,9 +75,9 @@ export default class MongoDatastore {
     const oldValue = await this.get(path);
     const newValue = oldValue === undefined ? value : merge(oldValue, value);
     await collection.updateOne(
-      {path: encodePath(path)},
-      {$set: newValue},
-      {upsert: true},
+      { path: encodePath(path) },
+      { $set: newValue },
+      { upsert: true },
     );
     return newValue;
   }
@@ -106,6 +101,6 @@ export default class MongoDatastore {
    */
   public async remove(path: DocumentPath): Promise<void> {
     const collection = this.getCollection(getCollectionPath(path));
-    await collection.deleteOne({path: encodePath(path)});
+    await collection.deleteOne({ path: encodePath(path) });
   }
 }

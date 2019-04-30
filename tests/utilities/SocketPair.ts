@@ -1,4 +1,4 @@
-import {EventEmitter} from 'events';
+import { EventEmitter } from 'events';
 import shortid from 'shortid';
 import Socket from '../../common/Socket';
 

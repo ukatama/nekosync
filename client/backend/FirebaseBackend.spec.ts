@@ -1,4 +1,4 @@
-import {deploy} from 'firebase-tools';
+import { deploy } from 'firebase-tools';
 import jsdom from 'mocha-jsdom';
 import path from 'path';
 import Config from '../../tests/config/firebase.json';
@@ -6,7 +6,7 @@ import testBackend from '../../tests/utilities/testBackend';
 import FirebaseBackend from './FirebaseBackend';
 
 describe('FirebaseBackend', () => {
-  jsdom({url: 'https://127.0.0.1'});
+  jsdom({ url: 'https://127.0.0.1' });
 
   it('can deploy', async () => {
     await deploy({

@@ -12,8 +12,7 @@ export interface CollectionPath {
 /**
  * EmptyPathError
  */
-export class EmptyPathError extends Error {
-}
+export class EmptyPathError extends Error {}
 
 /**
  * Encode path into string
@@ -23,7 +22,7 @@ export class EmptyPathError extends Error {
 export function encodePath(path: DocumentPath | CollectionPath): string {
   if (Array.isArray(path)) {
     if (path.length === 0) throw new EmptyPathError();
-    return path.map((e) => `${e.collection}/${e.id}`).join('/');
+    return path.map(e => `${e.collection}/${e.id}`).join('/');
   } else if (path.parentPath.length === 0) return path.collection;
   return `${encodePath(path.parentPath)}/${path.collection}`;
 }
@@ -35,7 +34,7 @@ export function encodePath(path: DocumentPath | CollectionPath): string {
  */
 export function getCollectionPath(path: DocumentPath): CollectionPath {
   const parentPath = path.slice(0, -1);
-  const {collection} = path[path.length - 1];
+  const { collection } = path[path.length - 1];
 
   return {
     parentPath,
@@ -69,6 +68,6 @@ export function getDocumentPath(
  */
 export function getId(path: DocumentPath): string {
   if (path.length === 0) throw new EmptyPathError();
-  const {id} = path[path.length - 1];
+  const { id } = path[path.length - 1];
   return id;
 }

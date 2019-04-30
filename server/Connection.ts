@@ -1,8 +1,8 @@
 /* eslint require-jsdoc: off */
 
-import {EventEmitter} from 'events';
-import {promises as fs} from 'fs';
-import {join} from 'path';
+import { EventEmitter } from 'events';
+import { promises as fs } from 'fs';
+import { join } from 'path';
 import {
   CollectionPath,
   DocumentPath,
@@ -11,7 +11,7 @@ import {
   getDocumentPath,
   getId,
 } from '../common/Path';
-import Rule, {CompiledRule, compile, authorize} from '../common/Rule';
+import Rule, { CompiledRule, compile, authorize } from '../common/Rule';
 import Socket, {
   SocketDownstreamEvent,
   SocketErrorCode,
@@ -82,7 +82,7 @@ export default class Connection {
     path: DocumentPath | CollectionPath,
     id: string,
     value: object | undefined,
-  ) => void
+  ) => void;
 
   /**
    * Constructor
@@ -100,54 +100,45 @@ export default class Connection {
       id: string,
       value: object | undefined,
     ) => {
-      this.socket.emit<SnapshotMessage>(
-        SocketDownstreamEvent.Snapshot,
-        {path, id, value},
-      );
+      this.socket.emit<SnapshotMessage>(SocketDownstreamEvent.Snapshot, {
+        path,
+        id,
+        value,
+      });
     };
 
     this.socket.on(
       SocketUpstreamEvent.Request,
       async (message: RequestMessage) => {
-        const {requestId, event, path, value} = message;
+        const { requestId, event, path, value } = message;
         try {
           const result = await this.onRequest(event, path, value);
-          this.socket.emit<ResponseMessage>(
-            SocketDownstreamEvent.Response,
-            {
-              requestId,
-              result,
-            },
-          );
+          this.socket.emit<ResponseMessage>(SocketDownstreamEvent.Response, {
+            requestId,
+            result,
+          });
         } catch (error) {
-          this.socket.emit(SocketDownstreamEvent.Response, {requestId, error});
+          this.socket.emit(SocketDownstreamEvent.Response, {
+            requestId,
+            error,
+          });
         }
       },
     );
   }
 
-  /**
-   * Authorize path by rule
-   * @param {DocumentPath | CollectionPath} path - Path
-   * @param {'read' | 'write'} mode - Mode to access
-   */
   private async authorize(
     path: DocumentPath | CollectionPath,
     mode: 'read' | 'write',
   ): Promise<void> {
     const result = await authorize(path, this.rules, mode, {
-      get: (path) => this.datastore.get(path),
-      list: (path) => this.datastore.list(path),
+      get: path => this.datastore.get(path),
+      list: path => this.datastore.list(path),
       getUserId: async () => this.socket.id,
     });
     if (!result) throw new ConnectionError(SocketErrorCode.Forbidden);
   }
 
-  /**
-   * Emit update event to eventBus
-   * @param {DocumentPath} path - Path for document
-   * @param {object | undefined} value - Value to emit
-   */
   private emitUpdate(path: DocumentPath, value: object | undefined): void {
     const id = getId(path);
     const collectionPath = getCollectionPath(path);
@@ -179,11 +170,9 @@ export default class Connection {
       case SocketRequestEvent.Remove:
         return await this.onRemove(asDocumentPath(path));
       case SocketRequestEvent.AddFile: {
-        const {
-          data,
-          type,
-          name,
-        } = (asObject(payload)) as {[key: string]: ArrayBuffer | string};
+        const { data, type, name } = asObject(payload) as {
+          [key: string]: ArrayBuffer | string;
+        };
 
         if (!(data instanceof ArrayBuffer)) {
           throw new TypeError('Data must be ArrayBuffer');
@@ -210,37 +199,33 @@ export default class Connection {
   ): Promise<void> {
     await this.authorize(path, 'read');
     const encodedPath = encodePath(path);
-    this.subscriptionCounter[encodedPath]
-      = (this.subscriptionCounter[encodedPath] || 0) + 1;
+    this.subscriptionCounter[encodedPath] =
+      (this.subscriptionCounter[encodedPath] || 0) + 1;
     if (this.subscriptionCounter[encodedPath] === 1) {
       this.eventBus.on(encodedPath, this.onSnapshot);
     }
     if (Array.isArray(path)) {
       const value = await this.datastore.get(path);
-      this.socket.emit<SnapshotMessage>(
-        SocketDownstreamEvent.Snapshot,
-        {
-          path,
-          id: getId(path),
-          value,
-        },
-      );
+      this.socket.emit<SnapshotMessage>(SocketDownstreamEvent.Snapshot, {
+        path,
+        id: getId(path),
+        value,
+      });
     } else {
       const values = await this.datastore.list(path);
       values.forEach(([id, value]) => {
-        this.socket.emit<SnapshotMessage>(
-          SocketDownstreamEvent.Snapshot,
-          {
-            path,
-            id,
-            value,
-          },
-        );
+        this.socket.emit<SnapshotMessage>(SocketDownstreamEvent.Snapshot, {
+          path,
+          id,
+          value,
+        });
       });
     }
   }
 
-  private async onUnsubscribe(path: DocumentPath | CollectionPath): Promise<void> {
+  private async onUnsubscribe(
+    path: DocumentPath | CollectionPath,
+  ): Promise<void> {
     await this.authorize(path, 'write');
     const encodedPath = encodePath(path);
     const count = this.subscriptionCounter[encodedPath] || 0;
@@ -287,9 +272,9 @@ export default class Connection {
     type: string,
     name: string,
   ): Promise<string> {
-    const id = await this.onAdd(path, {name, type});
+    const id = await this.onAdd(path, { name, type });
 
-    await fs.mkdir(this.filepath, {recursive: true});
+    await fs.mkdir(this.filepath, { recursive: true });
     await fs.writeFile(join(this.filepath, id), Buffer.from(data));
 
     return id;

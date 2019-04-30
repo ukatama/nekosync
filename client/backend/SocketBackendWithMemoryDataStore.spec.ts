@@ -1,4 +1,4 @@
-import {EventEmitter} from 'events';
+import { EventEmitter } from 'events';
 import path from 'path';
 import Connection from '../../server/Connection';
 import MemoryDatastore from '../../server/datastore/MemoryDatastore';

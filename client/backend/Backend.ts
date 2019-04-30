@@ -1,4 +1,4 @@
-import {DocumentPath, CollectionPath} from '../../common/Path';
+import { DocumentPath, CollectionPath } from '../../common/Path';
 
 export type Unsubscribe = () => Promise<void>;
 export type Callback = (id: string, value: object | undefined) => void;

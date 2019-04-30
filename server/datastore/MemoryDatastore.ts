@@ -1,7 +1,10 @@
 import merge from 'lodash/merge';
 import shortid from 'shortid';
 import {
-  DocumentPath, encodePath, getDocumentPath, CollectionPath,
+  DocumentPath,
+  encodePath,
+  getDocumentPath,
+  CollectionPath,
 } from '../../common/Path';
 import Datastore from './Datastore';
 
@@ -9,7 +12,7 @@ import Datastore from './Datastore';
  * Datastore using on memory data store
  */
 export default class MemoryDatastore extends Datastore {
-  private store: {[key: string]: object | undefined} = {};
+  private store: { [key: string]: object | undefined } = {};
 
   /**
    * Get an document
@@ -25,17 +28,15 @@ export default class MemoryDatastore extends Datastore {
    * @param {CollectionPath} path - Path for collection
    * @return {{ id: string, value: object }[]} value - Values
    */
-  public async list(
-    path: CollectionPath,
-  ): Promise<[string, object][]> {
+  public async list(path: CollectionPath): Promise<[string, object][]> {
     const encodedPath = encodePath(path);
     return Object.keys(this.store)
-      .map((key) => {
+      .map(key => {
         const m = key.match(new RegExp(`^${encodedPath}/([^/]+)$`));
         if (!m) return null;
         return [m[1], this.store[key]];
       })
-      .filter((a) => a !== null) as [string, object][];
+      .filter(a => a !== null) as [string, object][];
   }
 
   /**

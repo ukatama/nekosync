@@ -9,9 +9,9 @@ import {
   getDocumentPath,
   getId,
 } from '../../common/Path';
-import Rule, {CompiledRule, compile, authorize} from '../../common/Rule';
-import Backend, {Callback, Unsubscribe, AddFileParams} from './Backend';
-import {ForbiddenError} from './BackendError';
+import Rule, { CompiledRule, compile, authorize } from '../../common/Rule';
+import Backend, { Callback, Unsubscribe, AddFileParams } from './Backend';
+import { ForbiddenError } from './BackendError';
 
 const UserId = `user-${shortid()}`;
 
@@ -43,8 +43,8 @@ export default class MemoryBackend extends Backend {
     mode: 'read' | 'write',
   ): Promise<void> {
     const result = await authorize(path, this.rules, mode, {
-      get: async (path) => await this.get(path),
-      list: async (path) => await this.list(path),
+      get: async path => await this.get(path),
+      list: async path => await this.list(path),
       async getUserId() {
         return UserId;
       },
@@ -117,12 +117,12 @@ export default class MemoryBackend extends Backend {
   public async list(path: CollectionPath): Promise<[string, object][]> {
     const encodedPath = encodePath(path);
     return Object.keys(this.store)
-      .map((key) => {
+      .map(key => {
         const match = key.match(new RegExp(`^${encodedPath}/([^/]+)$`));
         if (!match) return undefined;
         return [match[1], this.store[key]];
       })
-      .filter((a) => a !== undefined) as [string, object][];
+      .filter(a => a !== undefined) as [string, object][];
   }
 
   /**
@@ -172,7 +172,7 @@ export default class MemoryBackend extends Backend {
   public async remove(path: DocumentPath): Promise<void> {
     await this.authorize(path, 'write');
 
-    const id = path[path.length-1].id;
+    const id = path[path.length - 1].id;
     const encodedPath = encodePath(path);
     delete this.store[encodedPath];
 
@@ -188,9 +188,9 @@ export default class MemoryBackend extends Backend {
    */
   public async addFile(
     path: CollectionPath,
-    {data, type, name}: AddFileParams,
+    { data, type, name }: AddFileParams,
   ): Promise<string> {
-    const id = await this.add(path, {type, name});
+    const id = await this.add(path, { type, name });
     const encodedPath = encodePath(getDocumentPath(path, id));
     this.storage[encodedPath] = URL.createObjectURL(data);
     return id;

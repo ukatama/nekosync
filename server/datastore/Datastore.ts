@@ -1,4 +1,4 @@
-import {CollectionPath, DocumentPath} from '../../common/Path';
+import { CollectionPath, DocumentPath } from '../../common/Path';
 
 /**
  * Datastore
@@ -16,9 +16,7 @@ export default abstract class Datastore {
    * @param {CollectionPath} path - Path for collection
    * @return {[string, object][]} value - Values
    */
-  public abstract list(
-    path: CollectionPath,
-  ): Promise<[string, object][]>;
+  public abstract list(path: CollectionPath): Promise<[string, object][]>;
 
   /**
    * Update an document

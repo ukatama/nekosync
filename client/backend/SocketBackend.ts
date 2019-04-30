@@ -1,6 +1,6 @@
 import shortid from 'shortid';
-import {EventEmitter} from 'events';
-import {DocumentPath, CollectionPath, encodePath} from '../../common/Path';
+import { EventEmitter } from 'events';
+import { DocumentPath, CollectionPath, encodePath } from '../../common/Path';
 import Socket, {
   SocketUpstreamEvent,
   SocketDownstreamEvent,
@@ -10,8 +10,8 @@ import Socket, {
   SnapshotMessage,
   RequestMessage,
 } from '../../common/Socket';
-import Backend, {Callback, Unsubscribe, AddFileParams} from './Backend';
-import {ForbiddenError} from './BackendError';
+import Backend, { Callback, Unsubscribe, AddFileParams } from './Backend';
+import { ForbiddenError } from './BackendError';
 
 /**
  * Backend using socket.io
@@ -59,29 +59,23 @@ export default class SocketBackend extends Backend {
     return new Promise((resolve, reject) => {
       const requestId = shortid();
 
-      this.requestEventBus.once(
-        requestId,
-        (message: ResponseMessage) => {
-          if (message.error) {
-            if (
-              (message.error as {code?: SocketErrorCode}).code
-                === SocketErrorCode.Forbidden
-            ) {
-              reject(new ForbiddenError());
-            } else reject(message.error);
-          } else resolve(message.result);
-        },
-      );
+      this.requestEventBus.once(requestId, (message: ResponseMessage) => {
+        if (message.error) {
+          if (
+            (message.error as { code?: SocketErrorCode }).code ===
+            SocketErrorCode.Forbidden
+          ) {
+            reject(new ForbiddenError());
+          } else reject(message.error);
+        } else resolve(message.result);
+      });
 
-      this.socket.emit<RequestMessage>(
-        SocketUpstreamEvent.Request,
-        {
-          requestId,
-          event,
-          path,
-          value,
-        },
-      );
+      this.socket.emit<RequestMessage>(SocketUpstreamEvent.Request, {
+        requestId,
+        event,
+        path,
+        value,
+      });
     });
   }
 
@@ -99,16 +93,10 @@ export default class SocketBackend extends Backend {
     this.snapshotEventBus.on(encodedPath, (message: SnapshotMessage) => {
       callback(message.id, message.value);
     });
-    await this.request(
-      SocketRequestEvent.SubscribeDocument,
-      path,
-    );
+    await this.request(SocketRequestEvent.SubscribeDocument, path);
     return async () => {
       this.snapshotEventBus.off(encodedPath, callback);
-      await this.request(
-        SocketRequestEvent.UnsubscribeDocument,
-        path,
-      );
+      await this.request(SocketRequestEvent.UnsubscribeDocument, path);
     };
   }
 
@@ -126,16 +114,10 @@ export default class SocketBackend extends Backend {
     this.snapshotEventBus.on(encodedPath, (message: SnapshotMessage) => {
       callback(message.id, message.value);
     });
-    await this.request(
-      SocketRequestEvent.SubscribeCollection,
-      path,
-    );
+    await this.request(SocketRequestEvent.SubscribeCollection, path);
     return async () => {
       this.snapshotEventBus.off(encodedPath, callback);
-      await this.request(
-        SocketRequestEvent.UnsubscribeCollection,
-        path,
-      );
+      await this.request(SocketRequestEvent.UnsubscribeCollection, path);
     };
   }
 

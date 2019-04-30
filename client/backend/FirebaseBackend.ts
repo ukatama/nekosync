@@ -1,11 +1,15 @@
-import {initializeApp, firestore, app, storage} from 'firebase';
+import { initializeApp, firestore, app, storage } from 'firebase';
 import 'firebase/firestore';
 import 'firebase/storage';
 import {
-  CollectionPath, DocumentPath, EmptyPathError, encodePath, getDocumentPath,
+  CollectionPath,
+  DocumentPath,
+  EmptyPathError,
+  encodePath,
+  getDocumentPath,
 } from '../../common/Path';
-import Backend, {Callback, Unsubscribe, AddFileParams} from './Backend';
-import {ForbiddenError} from './BackendError';
+import Backend, { Callback, Unsubscribe, AddFileParams } from './Backend';
+import { ForbiddenError } from './BackendError';
 
 // ToDo: Detect document removed event
 const Removed = 'NEKORD_REMOVED';
@@ -36,7 +40,8 @@ async function handleError<T>(block: () => Promise<T>): Promise<T> {
 function filter(value: object | undefined): object | undefined {
   if (value === undefined) return value;
   else if (
-    (Removed in value) && (value as {[Removed]?: typeof Removed})[Removed]
+    Removed in value &&
+    (value as { [Removed]?: typeof Removed })[Removed]
   ) {
     return undefined;
   }
@@ -73,10 +78,7 @@ function getCollection(
   firestore: firestore.Firestore,
   path: CollectionPath,
 ): firestore.CollectionReference {
-  const {
-    parentPath,
-    collection,
-  } = path;
+  const { parentPath, collection } = path;
   if (parentPath.length === 0) return firestore.collection(collection);
 
   const parent = getDocument(firestore, parentPath);
@@ -130,8 +132,8 @@ export default class FirebaseBackend extends Backend {
       const document = getDocument(this.firestore, path);
       const snapshot = await document.get();
 
-      const unsubscribe = document.onSnapshot(
-        (snapshot) => callback(snapshot.id, filter(snapshot.data())),
+      const unsubscribe = document.onSnapshot(snapshot =>
+        callback(snapshot.id, filter(snapshot.data())),
       );
 
       callback(snapshot.id, snapshot.data());
@@ -156,13 +158,11 @@ export default class FirebaseBackend extends Backend {
       const collection = getCollection(this.firestore, path);
       const snapshot = await collection.get();
 
-      const unsubscribe = collection.onSnapshot(
-        (snapshot) => snapshot.forEach(
-          (result) => callback(result.id, filter(result.data())),
-        ),
+      const unsubscribe = collection.onSnapshot(snapshot =>
+        snapshot.forEach(result => callback(result.id, filter(result.data()))),
       );
 
-      snapshot.forEach((result) => callback(result.id, filter(result.data())));
+      snapshot.forEach(result => callback(result.id, filter(result.data())));
 
       return async () => {
         unsubscribe();
@@ -193,7 +193,7 @@ export default class FirebaseBackend extends Backend {
       const collection = getCollection(this.firestore, path);
       return await collection.get();
     });
-    return snapshot.docs.map((s) => [s.id, s.data()]);
+    return snapshot.docs.map(s => [s.id, s.data()]);
   }
 
   /**
@@ -232,7 +232,7 @@ export default class FirebaseBackend extends Backend {
   public async remove(path: DocumentPath): Promise<void> {
     await handleError(async () => {
       const document = getDocument(this.firestore, path);
-      await document.set({[Removed]: true});
+      await document.set({ [Removed]: true });
       await document.delete();
     });
   }
@@ -245,11 +245,11 @@ export default class FirebaseBackend extends Backend {
    */
   public async addFile(
     path: CollectionPath,
-    {data, type, name}: AddFileParams,
+    { data, type, name }: AddFileParams,
   ): Promise<string> {
-    const id = await this.add(path, {type, name});
+    const id = await this.add(path, { type, name });
     const ref = this.storage.ref(encodePath(getDocumentPath(path, id)));
-    await ref.put(data, {contentType: type});
+    await ref.put(data, { contentType: type });
     return id;
   }
 

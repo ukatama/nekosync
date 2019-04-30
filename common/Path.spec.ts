@@ -1,5 +1,5 @@
-import {assert} from 'chai';
-import {getId, EmptyPathError} from './Path';
+import { assert } from 'chai';
+import { getId, EmptyPathError } from './Path';
 
 describe('Path', () => {
   describe('getId', () => {

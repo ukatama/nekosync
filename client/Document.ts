@@ -1,4 +1,4 @@
-import {DocumentPath, getId} from '../common/Path';
+import { DocumentPath, getId } from '../common/Path';
 import Backend from './backend/Backend';
 import Collection from './Collection';
 
@@ -31,7 +31,7 @@ export interface AttributeOptions {
  * @return {PropertyDecorator} - Decorator
  */
 export function attribute(options: AttributeOptions = {}): PropertyDecorator {
-  return (target: {attributes?: object}, propertyKey) => {
+  return (target: { attributes?: object }, propertyKey) => {
     if (target.attributes === undefined) {
       Object.defineProperty(target, 'attributes', {
         configurable: false,
@@ -62,12 +62,7 @@ export function collection<D>(
       configurable: false,
       enumerable: true,
       get() {
-        return new Collection(
-          DocumentClass,
-          this.backend,
-          name,
-          this.path,
-        );
+        return new Collection(DocumentClass, this.backend, name, this.path);
       },
     });
   };
@@ -77,26 +72,26 @@ export function collection<D>(
  * Data Document
  */
 export default class Document<A extends {}> {
-  private attributes?: {[key: string]: AttributeOptions};
+  private attributes?: { [key: string]: AttributeOptions };
   // private collections!: {[key: string]: Collection};
 
   public readonly backend: Backend;
   public readonly path: DocumentPath;
 
   /**
-    * Constructor
-    * @param {Backend} backend - Instance of backend;
-    * @param {DocumentPath} path - Path of document
-    * @param {object} value - Value
-    */
+   * Constructor
+   * @param {Backend} backend - Instance of backend;
+   * @param {DocumentPath} path - Path of document
+   * @param {object} value - Value
+   */
   public constructor(backend: Backend, path: DocumentPath, value: object) {
     this.backend = backend;
     this.path = path;
 
-    const {attributes} = this;
+    const { attributes } = this;
     if (attributes) {
-      Object.keys(attributes).forEach((attributeName) => {
-        const {required} = attributes[attributeName];
+      Object.keys(attributes).forEach(attributeName => {
+        const { required } = attributes[attributeName];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const attributeValue = (value as any)[attributeName];
         if (required && attributeValue === undefined) {

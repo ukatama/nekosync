@@ -1,4 +1,4 @@
-import {getCollectionPath} from '../../common/Path';
+import { getCollectionPath } from '../../common/Path';
 import Rule from '../../common/Rule';
 
 const rules: Rule[] = [
@@ -25,11 +25,11 @@ const rules: Rule[] = [
     path: '/nekord-test-c/:id',
     read: true,
     async write(path, params, reader) {
-      const {id} = params;
+      const { id } = params;
       if (!id) return false;
-      const value = await reader.get([{collection: 'nekord-test-d', id}]);
+      const value = await reader.get([{ collection: 'nekord-test-d', id }]);
       const castedValue = value as { writable?: boolean } | undefined;
-      return castedValue && castedValue.writable || false;
+      return (castedValue && castedValue.writable) || false;
     },
   },
   {

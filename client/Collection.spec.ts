@@ -1,28 +1,26 @@
-import {assert} from 'chai';
+import { assert } from 'chai';
 import shortid from 'shortid';
-import {fake} from 'sinon';
+import { fake } from 'sinon';
 import rules from '../tests/utilities/rules';
 import MemoryBackend from './backend/MemoryBackend';
-import {Unsubscribe} from './backend/Backend';
+import { Unsubscribe } from './backend/Backend';
 import Collection from './Collection';
-import Document, {attribute, collection} from './Document';
+import Document, { attribute, collection } from './Document';
 
 const CollectionA = 'nekord-test-a';
 const CollectionB = 'nekord-test-b';
 
 describe('Collection', () => {
-  class DocumentA extends Document<{a1: string; a2?: number}> {
-    @attribute({required: true}) public a1!: string;
+  class DocumentA extends Document<{ a1: string; a2?: number }> {
+    @attribute({ required: true }) public a1!: string;
     @attribute() public a2?: number;
   }
 
-  class DocumentB extends Document<{b1: string}> {
-    @attribute({required: true}) public b1!: string;
+  class DocumentB extends Document<{ b1: string }> {
+    @attribute({ required: true }) public b1!: string;
 
-    @collection(
-      DocumentA,
-      CollectionA,
-    ) public child!: Collection<DocumentA>
+    @collection(DocumentA, CollectionA)
+    public child!: Collection<DocumentA>;
   }
 
   const backend = new MemoryBackend(rules);
@@ -48,7 +46,7 @@ describe('Collection', () => {
   });
 
   it('can update', async () => {
-    await collectionA.update(id, {a1: 'foo', a2: 1});
+    await collectionA.update(id, { a1: 'foo', a2: 1 });
   });
 
   let documentA: DocumentA;
@@ -81,7 +79,7 @@ describe('Collection', () => {
   });
 
   it('can update', async () => {
-    documentA.update({a1: 'fooo', a2: 3});
+    documentA.update({ a1: 'fooo', a2: 3 });
   });
 
   it('calls callback', () => {
@@ -119,7 +117,7 @@ describe('Collection', () => {
   });
 
   it('can add', async () => {
-    documentA = await collectionA.add({a1: 'foo'});
+    documentA = await collectionA.add({ a1: 'foo' });
   });
 
   it('returns document', () => {
@@ -157,7 +155,7 @@ describe('Collection', () => {
   });
 
   it('can update', async () => {
-    await documentA.update({a2: 5});
+    await documentA.update({ a2: 5 });
   });
 
   it('calls callback', () => {
@@ -187,7 +185,7 @@ describe('Collection', () => {
 
   let documentB: DocumentB;
   it('can get chlid collection', async () => {
-    documentB = await collectionB.add({b1: 'f'});
+    documentB = await collectionB.add({ b1: 'f' });
     collectionA = documentB.child;
     assert.instanceOf(collectionA, Collection);
   });
@@ -202,7 +200,7 @@ describe('Collection', () => {
   });
 
   it('can add', async () => {
-    documentA = await collectionA.add({a1: 'baz'});
+    documentA = await collectionA.add({ a1: 'baz' });
   });
 
   it('returns document', () => {
