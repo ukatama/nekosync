@@ -1,5 +1,6 @@
 import {assert} from 'chai';
 import {EventEmitter} from 'events';
+import path from 'path';
 import shortid from 'shortid';
 import {fake} from 'sinon';
 import {
@@ -29,7 +30,13 @@ describe('Connection', () => {
   socket.on(SocketDownstreamEvent.Response, callback);
 
   it('can initalize', () => {
-    new Connection(socket, datastore, eventBus, rules);
+    new Connection({
+      socket,
+      datastore,
+      eventBus,
+      rules,
+      filepath: path.join(__dirname, '../../data'),
+    });
   });
 
   const requestId = shortid();
@@ -97,7 +104,7 @@ describe('Connection', () => {
         error,
       } = call.args[0];
       assert.isDefined(error);
-      assert.equal(error.message, 'Invalid message');
-    })
+      assert.instanceOf(error, TypeError);
+    });
   });
 });

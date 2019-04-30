@@ -10,7 +10,7 @@ import {
   getId,
 } from '../../common/Path';
 import Rule, {CompiledRule, compile, authorize} from '../../common/Rule';
-import Backend, {Callback, Unsubscribe} from './Backend';
+import Backend, {Callback, Unsubscribe, AddFileParams} from './Backend';
 import {ForbiddenError} from './BackendError';
 
 const UserId = `user-${shortid()}`;
@@ -21,6 +21,7 @@ const UserId = `user-${shortid()}`;
 export default class MemoryBackend extends Backend {
   private eventBus = new EventEmitter();
   private store: { [key: string]: object | undefined } = {};
+  private storage: { [key: string]: string | undefined } = {};
   private rules: CompiledRule[];
 
   /**
@@ -177,5 +178,43 @@ export default class MemoryBackend extends Backend {
 
     this.eventBus.emit(encodedPath, id, undefined);
     this.eventBus.emit(encodePath(getCollectionPath(path)), id, undefined);
+  }
+
+  /**
+   * Put file
+   * @param {DocumentPath} path - Path for file
+   * @param {AddFileParams} params - Params
+   * @return {string} File id
+   */
+  public async addFile(
+    path: CollectionPath,
+    {data, type, name}: AddFileParams,
+  ): Promise<string> {
+    const id = await this.add(path, {type, name});
+    const encodedPath = encodePath(getDocumentPath(path, id));
+    this.storage[encodedPath] = URL.createObjectURL(data);
+    return id;
+  }
+
+  /**
+   * Delete file
+   * @param {DocumentPath} path - Path for file
+   */
+  public async deleteFile(path: DocumentPath): Promise<void> {
+    const url = this.storage[encodePath(path)];
+    if (!url) throw new Error('File not found');
+    URL.revokeObjectURL(url);
+    await this.remove(path);
+  }
+
+  /**
+   * Get file url
+   * @param {DocumentPath} path - Path for file
+   * @return {string} URL
+   */
+  public async getFileUrl(path: DocumentPath): Promise<string> {
+    const url = this.storage[encodePath(path)];
+    if (!url) throw new Error('File not found');
+    return url;
   }
 }

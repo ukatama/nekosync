@@ -1,6 +1,10 @@
-import {initializeApp, firestore, app} from 'firebase';
-import {CollectionPath, DocumentPath, EmptyPathError} from '../../common/Path';
-import Backend, {Callback, Unsubscribe} from './Backend';
+import {initializeApp, firestore, app, storage} from 'firebase';
+import 'firebase/firestore';
+import 'firebase/storage';
+import {
+  CollectionPath, DocumentPath, EmptyPathError, encodePath, getDocumentPath,
+} from '../../common/Path';
+import Backend, {Callback, Unsubscribe, AddFileParams} from './Backend';
 import {ForbiddenError} from './BackendError';
 
 // ToDo: Detect document removed event
@@ -102,6 +106,14 @@ export default class FirebaseBackend extends Backend {
    */
   private get firestore(): firestore.Firestore {
     return this.app.firestore();
+  }
+
+  /**
+   * Getter of firestore instance
+   * @return {Storage} - Firestore instance
+   */
+  private get storage(): storage.Storage {
+    return this.app.storage();
   }
 
   /**
@@ -223,5 +235,41 @@ export default class FirebaseBackend extends Backend {
       await document.set({[Removed]: true});
       await document.delete();
     });
+  }
+
+  /**
+   * Put file
+   * @param {DocumentPath} path - Path for file
+   * @param {AddFileParams} params - Params
+   * @return {string} File id
+   */
+  public async addFile(
+    path: CollectionPath,
+    {data, type, name}: AddFileParams,
+  ): Promise<string> {
+    const id = await this.add(path, {type, name});
+    const ref = this.storage.ref(encodePath(getDocumentPath(path, id)));
+    await ref.put(data, {contentType: type});
+    return id;
+  }
+
+  /**
+   * Delete file
+   * @param {DocumentPath} path - Path for file
+   */
+  public async deleteFile(path: DocumentPath): Promise<void> {
+    const ref = this.storage.ref(encodePath(path));
+    await ref.delete();
+    await this.remove(path);
+  }
+
+  /**
+   * Get file url
+   * @param {DocumentPath} path - Path for file
+   * @return {string} URL
+   */
+  public async getFileUrl(path: DocumentPath): Promise<string> {
+    const ref = this.storage.ref(encodePath(path));
+    return ref.getDownloadURL();
   }
 }

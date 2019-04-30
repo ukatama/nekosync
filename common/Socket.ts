@@ -29,6 +29,9 @@ export enum SocketRequestEvent {
   Update = 'Update',
   Add = 'Add',
   Remove = 'Remove',
+  AddFile = 'AddFile',
+  DeleteFile = 'DeleteFile',
+  GetDownloadUrl = 'GetDownloadUrl',
 }
 
 export enum SocketErrorCode {

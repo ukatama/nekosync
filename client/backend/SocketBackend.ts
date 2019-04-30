@@ -10,7 +10,7 @@ import Socket, {
   SnapshotMessage,
   RequestMessage,
 } from '../../common/Socket';
-import Backend, {Callback, Unsubscribe} from './Backend';
+import Backend, {Callback, Unsubscribe, AddFileParams} from './Backend';
 import {ForbiddenError} from './BackendError';
 
 /**
@@ -193,5 +193,39 @@ export default class SocketBackend extends Backend {
    */
   public async remove(path: DocumentPath): Promise<void> {
     await this.request(SocketRequestEvent.Remove, path);
+  }
+
+  /**
+   * Add file
+   * @param {DocumentPath} path - Path for file
+   * @param {AddFileParams} params - AddFileParams
+   * @return {string} File id
+   */
+  public async addFile(
+    path: CollectionPath,
+    params: AddFileParams,
+  ): Promise<string> {
+    const id = await this.request(SocketRequestEvent.AddFile, path, params);
+    if (typeof id !== 'string') throw new TypeError();
+    return id;
+  }
+
+  /**
+   * Delete file
+   * @param {DocumentPath} path - Path for file
+   */
+  public async deleteFile(path: DocumentPath): Promise<void> {
+    await this.request(SocketRequestEvent.DeleteFile, path);
+  }
+
+  /**
+   * Get file url
+   * @param {DocumentPath} path - Path for file
+   * @return {string} URL
+   */
+  public async getFileUrl(path: DocumentPath): Promise<string> {
+    const url = await this.request(SocketRequestEvent.GetDownloadUrl, path);
+    if (typeof url !== 'string') throw new TypeError();
+    return url;
   }
 }

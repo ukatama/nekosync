@@ -1,5 +1,6 @@
 import {EventEmitter} from 'events';
 import {MongoClient} from 'mongodb';
+import path from 'path';
 import MongoDatastore from '../../server/datastore/MongoDatastore';
 import Connection from '../../server/Connection';
 import SocketPair from '../../tests/utilities/SocketPair';
@@ -13,7 +14,13 @@ describe('SocketBackend with MongoDatastore', async () => {
   const socketPair = new SocketPair();
   const datastore = new MongoDatastore(db);
   const eventBus = new EventEmitter();
-  new Connection(socketPair.server, datastore, eventBus, rules);
+  new Connection({
+    socket: socketPair.server,
+    datastore,
+    eventBus,
+    rules,
+    filepath: path.join(__dirname, '../../data'),
+  });
 
   testBackend(new SocketBackend(socketPair.client));
 

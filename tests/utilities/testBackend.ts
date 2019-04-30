@@ -14,11 +14,26 @@ const collectionC = 'nekord-test-c';
 const collectionD = 'nekord-test-d';
 const collectionX = 'nekord-test-x';
 
+function cleaner(backend: Backend, collection: string) {
+  return async () => {
+    const list = await backend.list({
+      parentPath: [],
+      collection,
+    });
+    await Promise.all(
+      list.map(([id]) => backend.remove([{collection: collectionA, id}])),
+    );
+  };
+}
+
 function getParentPath(nested: boolean): DocumentPath {
   return nested ? [{collection: collectionB, id: shortid()}] : [];
 }
 
 function teestDocument(backend: Backend, nested: boolean): void {
+  after(cleaner(backend, collectionA));
+  if (nested) after(cleaner(backend, collectionB));
+
   let unsubscribe: Unsubscribe;
 
   const callback = fake();
@@ -80,6 +95,9 @@ function teestDocument(backend: Backend, nested: boolean): void {
 }
 
 function testCollection(backend: Backend, nested: boolean): void {
+  after(cleaner(backend, collectionA));
+  if (nested) after(cleaner(backend, collectionB));
+
   let unsubscribe: Unsubscribe;
 
   const callback = fake();
@@ -233,6 +251,9 @@ function testError(backend: Backend): void {
 
 function testRules(backend: Backend): void {
   describe('conditional rule', () => {
+    after(cleaner(backend, collectionD));
+    after(cleaner(backend, collectionC));
+
     const id = shortid();
     it('can update', async () => {
       await backend.update([{collection: collectionD, id}], {writable: true});
@@ -267,6 +288,58 @@ function testRules(backend: Backend): void {
   });
 }
 
+function testFile(backend: Backend): void {
+  describe('files', () => {
+    after(cleaner(backend, collectionA));
+
+    const value = 'test'.split('').map((c) => c.charCodeAt(0));
+    const data = new ArrayBuffer(value.length);
+    const view = new Uint8Array(data);
+    view.set(value);
+
+    const name = 'test.txt';
+    const type = 'text/plain';
+
+    let id: string;
+    it('adds file', async () => {
+      id = await backend.addFile({
+        parentPath: [],
+        collection: collectionA,
+      }, {
+        data,
+        name,
+        type,
+      });
+    });
+
+    it('returns file url', async () => {
+      const url = await backend.getFileUrl([{
+        collection: collectionA,
+        id,
+      }]);
+      assert.isString(url);
+      assert.notEqual(url, '');
+    });
+
+    it('has list of files', async () => {
+      const list = await backend.list({
+        parentPath: [],
+        collection: collectionA,
+      });
+      assert.deepEqual(list.map((a) => a[1]), [
+        {name: 'test.txt', type: 'text/plain'},
+      ]);
+    });
+
+    it('deletes file', async () => {
+      await backend.deleteFile([{
+        collection: collectionA,
+        id,
+      }]);
+    });
+  });
+}
+
 export default function testBackend(backend: Backend): void {
   describe('document subscription', () => {
     teestDocument(backend, false);
@@ -284,4 +357,5 @@ export default function testBackend(backend: Backend): void {
 
   testError(backend);
   testRules(backend);
+  testFile(backend);
 }

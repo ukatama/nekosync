@@ -1,3 +1,4 @@
+/data
 /lib
 /tests/config/firebase.json
 .nyc_output

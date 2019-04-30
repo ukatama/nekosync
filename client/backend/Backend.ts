@@ -3,6 +3,12 @@ import {DocumentPath, CollectionPath} from '../../common/Path';
 export type Unsubscribe = () => Promise<void>;
 export type Callback = (id: string, value: object | undefined) => void;
 
+export interface AddFileParams {
+  data: ArrayBuffer;
+  name: string;
+  type: string;
+}
+
 /** Abstract class of any backends */
 export default abstract class Backend {
   /**
@@ -62,4 +68,28 @@ export default abstract class Backend {
    * @param {object} value - Value
    */
   public abstract remove(path: DocumentPath): Promise<void>;
+
+  /**
+   * Put file
+   * @param {CollectionPath} path - Path for file
+   * @param {AddFileParams} params - Params
+   * @return {string} File id
+   */
+  public abstract addFile(
+    path: CollectionPath,
+    params: AddFileParams,
+  ): Promise<string>;
+
+  /**
+   * Delete file
+   * @param {DocumentPath} path - Path for file
+   */
+  public abstract deleteFile(path: DocumentPath): Promise<void>;
+
+  /**
+   * Get file url
+   * @param {DocumentPath} path - Path for file
+   * @return {string} URL
+   */
+  public abstract getFileUrl(path: DocumentPath): Promise<string>;
 }
