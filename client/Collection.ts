@@ -1,117 +1,91 @@
-import { DocumentPath, getDocumentPath } from '../common/Path';
 import Backend, { Unsubscribe } from './backend/Backend';
-import { AttributesOf, DocumentClassOf } from './Document';
-
-export type UpdateCallback<D> = (document: D) => void;
-export type RemoveCallback = (id: string) => void;
+import { CollectionPath } from '../common/Path';
+import Document from './Document';
 
 /**
  * Collection
  */
-export default class Collection<D> {
-  private DocumentClass: DocumentClassOf<D>;
-  private backend: Backend;
-  private parentPath: DocumentPath;
-  public readonly name: string;
+export default abstract class Collection<
+  T extends object,
+  U extends object = object
+> {
+  private _documents: Document<T>[] = [];
+  public readonly backend: Backend;
+  public readonly parentDocument?: Document<U>;
+
+  public abstract get name(): string;
 
   /**
    * Constructor
-   * @param {DocumentClassOf<D>} DocumentClass: Constructor of Document
-   * @param {Backend} backend - Instance of Backend
-   * @param {string} name - Name of collection
-   * @param {DocumentPath} parentPath - Path for parent document
+   * @param {Backend} backend - Instance of backend
+   * @param {Document | undefined} parentDocument - Parent document
    */
-  public constructor(
-    DocumentClass: DocumentClassOf<D>,
-    backend: Backend,
-    name: string,
-    parentPath: DocumentPath = [],
-  ) {
-    (this.DocumentClass = DocumentClass), (this.backend = backend);
-    this.name = name;
-    this.parentPath = parentPath;
+  public constructor(backend: Backend, parentDocument?: Document<U>) {
+    this.backend = backend;
+    this.parentDocument = parentDocument;
   }
 
   /**
-   * Subscribe document
-   * @param {string} id - Document id
-   * @param {UpdateCallback} onUpdate - Callback for update
-   * @param {RemoveCallback} onRemove - Callback for remove
-   * @param {Promise<Unsubscribe>} - Unsubscriber
+   * Get path of collection
+   * @return {CollectionPath} Path
    */
-  public async subscribeDocument(
-    id: string,
-    onUpdate: UpdateCallback<D>,
-    onRemove: RemoveCallback,
-  ): Promise<Unsubscribe> {
-    const path = [...this.parentPath, { collection: this.name, id }];
-    const unsubscribe = await this.backend.subscribeDocument(
-      path,
-      (id, value) => {
-        if (value === undefined) onRemove(id);
-        else onUpdate(new this.DocumentClass(this.backend, path, value));
-      },
-    );
-    return unsubscribe;
+  public get path(): CollectionPath {
+    return {
+      parentPath: this.parentDocument ? this.parentDocument.path : [],
+      collection: this.name,
+    };
   }
 
   /**
-   * Subscribe collection
-   * @param {UpdateCallback} onUpdate - Callback for update
-   * @param {RemoveCallback} onRemove - Callback for remove
-   * @param {Promise<Unsubscribe>} - Unsubscriber
+   * List documents
+   * @return {Promise<Document<T>[]>} Documents
    */
-  public async subscribeCollection(
-    onUpdate: UpdateCallback<D>,
-    onRemove: RemoveCallback,
-  ): Promise<Unsubscribe> {
-    const path = { parentPath: this.parentPath, collection: this.name };
-    const unsubscribe = await this.backend.subscribeCollection(
-      path,
-      (id, value) => {
-        if (value === undefined) onRemove(id);
-        else {
-          onUpdate(
-            new this.DocumentClass(
-              this.backend,
-              getDocumentPath(path, id),
-              value,
-            ),
-          );
-        }
-      },
-    );
-    return unsubscribe;
+  public async list(): Promise<Document<T>[]> {
+    const values = await this.backend.list(this.path);
+    return values.map(([id, value]) => new Document<T>(this, id, value as T));
   }
 
   /**
-   * Update
-   * @param {string} id - id
-   * @param {object} value - value
+   * Add new document
+   * @param {T} value - Value of new document
    */
-  public async update(
-    id: string,
-    value: Partial<AttributesOf<D>>,
-  ): Promise<void> {
-    await this.backend.update(
-      [...this.parentPath, { collection: this.name, id }],
-      value,
-    );
+  public async add(value: T): Promise<Document<T>> {
+    const id = await this.backend.add(this.path, value);
+    return new Document<T>(this, id, value);
   }
 
   /**
-   * Add
-   * @param {object} value - value
+   * Get documents subscribed
+   * @return {Document<T>[]} documents
    */
-  public async add(value: AttributesOf<D>): Promise<D> {
-    const id = await this.backend.add(
-      { parentPath: this.parentPath, collection: this.name },
-      value,
-    );
-    return new this.DocumentClass(
-      this.backend,
-      [...this.parentPath, { collection: this.name, id }],
-      value,
-    );
+  public get documents(): Document<T>[] {
+    return this._documents;
+  }
+
+  /**
+   * Subscribe
+   */
+  public async subscribe(): Promise<Unsubscribe> {
+    this._documents = [];
+
+    return await this.backend.subscribeCollection(this.path, (id, value) => {
+      if (value === undefined) {
+        this._documents = this._documents.filter(
+          document => document.id !== id,
+        );
+      } else {
+        let exists = false;
+        const newDocument = new Document<T>(this, id, value as T);
+        this._documents = this._documents.map(document => {
+          if (document.id === id) {
+            exists = true;
+            return newDocument;
+          }
+          return document;
+        });
+
+        if (!exists) this._documents.unshift(newDocument);
+      }
+    });
   }
 }

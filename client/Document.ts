@@ -1,129 +1,73 @@
-import { DocumentPath, getId } from '../common/Path';
-import Backend from './backend/Backend';
 import Collection from './Collection';
-
-export type AttributesOf<D> = D extends Document<infer A> ? A : never;
-
-export interface DocumentClassOf<D> {
-  new (backend: Backend, path: DocumentPath, value: object): D;
-}
+import { DocumentPath, getDocumentPath } from '../common/Path';
+import { Unsubscribe } from './backend/Backend';
+import DocumentRemovedError from './DocumentRemovedError';
 
 /**
- * MissingAttributeError
+ * Document
  */
-export class MissingAttributeError extends Error {
-  /**
-   * Constructor
-   * @param {string} attributeName - Name of missing attribute
-   */
-  public constructor(attributeName: string) {
-    super(`${attributeName} is missing`);
-  }
-}
-
-export interface AttributeOptions {
-  required?: boolean;
-}
-
-/**
- * Attribute decorator
- * @param {AttributeOptions | undefined} options - Attributeoptions
- * @return {PropertyDecorator} - Decorator
- */
-export function attribute(options: AttributeOptions = {}): PropertyDecorator {
-  return (target: { attributes?: object }, propertyKey) => {
-    if (target.attributes === undefined) {
-      Object.defineProperty(target, 'attributes', {
-        configurable: false,
-        enumerable: false,
-        value: {},
-      });
-    }
-    Object.defineProperty(target.attributes, propertyKey, {
-      configurable: false,
-      enumerable: true,
-      value: options,
-    });
-  };
-}
-
-/**
- * Collection decorator
- * @param {DocumentClassOf<D>} DocumentClass - Constructor of Document
- * @param {string} name - Name of collection
- * @return {PropertyDecorator} - Decorator
- */
-export function collection<D>(
-  DocumentClass: DocumentClassOf<D>,
-  name: string,
-): PropertyDecorator {
-  return (target, propertyKey) => {
-    Object.defineProperty(target, propertyKey, {
-      configurable: false,
-      enumerable: true,
-      get() {
-        return new Collection(DocumentClass, this.backend, name, this.path);
-      },
-    });
-  };
-}
-
-/**
- * Data Document
- */
-export default class Document<A extends {}> {
-  private attributes?: { [key: string]: AttributeOptions };
-  // private collections!: {[key: string]: Collection};
-
-  public readonly backend: Backend;
-  public readonly path: DocumentPath;
+export default class Document<T extends object> {
+  public readonly collection: Collection<T>;
+  public readonly id: string;
+  private _value: T | undefined;
 
   /**
    * Constructor
-   * @param {Backend} backend - Instance of backend;
-   * @param {DocumentPath} path - Path of document
-   * @param {object} value - Value
+   * @param {Collection} collection - Parent collection
+   * @param {string} id - ID of document
+   * @param {T} value - Value of document
    */
-  public constructor(backend: Backend, path: DocumentPath, value: object) {
-    this.backend = backend;
-    this.path = path;
-
-    const { attributes } = this;
-    if (attributes) {
-      Object.keys(attributes).forEach(attributeName => {
-        const { required } = attributes[attributeName];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const attributeValue = (value as any)[attributeName];
-        if (required && attributeValue === undefined) {
-          throw new MissingAttributeError(attributeName);
-        }
-        Object.assign(this, {
-          [attributeName]: attributeValue,
-        });
-      });
-    }
+  public constructor(collection: Collection<T>, id: string, value?: T) {
+    this.collection = collection;
+    this.id = id;
+    this._value = value;
   }
 
   /**
-   * Getter of id
-   * @return {string} - id
+   * Get path for document
+   * @return {DocumentPath} path
    */
-  public get id(): string {
-    return getId(this.path);
+  public get path(): DocumentPath {
+    return getDocumentPath(this.collection.path, this.id);
   }
 
   /**
-   * Update
-   * @param {object} value - value
+   * Get synced value of document
    */
-  public async update(value: Partial<A>): Promise<void> {
-    await this.backend.update(this.path, value);
+  public get value(): T {
+    if (this._value === undefined) throw new DocumentRemovedError();
+    return this._value;
   }
 
   /**
-   * Remove
+   * Get value of document
+   * @param value G
+   */
+
+  /**
+   * Update document
+   * @param {T} value - New value
+   */
+  public async update(value: Partial<T>): Promise<void> {
+    await this.collection.backend.update(this.path, value);
+  }
+
+  /**
+   * Remove document
    */
   public async remove(): Promise<void> {
-    await this.backend.remove(this.path);
+    await this.collection.backend.remove(this.path);
+  }
+
+  /**
+   * Subscribe document
+   */
+  public async subscribe(): Promise<Unsubscribe> {
+    return await this.collection.backend.subscribeDocument(
+      this.path,
+      (id, value) => {
+        this._value = value as T | undefined;
+      },
+    );
   }
 }

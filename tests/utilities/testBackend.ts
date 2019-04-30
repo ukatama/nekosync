@@ -10,24 +10,13 @@ import {
   getId,
   getDocumentPath,
 } from '../../common/Path';
+import cleaner from './collectionCleaner';
 
 const collectionA = 'nekosync-test-a';
 const collectionB = 'nekosync-test-b';
 const collectionC = 'nekosync-test-c';
 const collectionD = 'nekosync-test-d';
 const collectionX = 'nekosync-test-x';
-
-function cleaner(backend: Backend, collection: string) {
-  return async () => {
-    const list = await backend.list({
-      parentPath: [],
-      collection,
-    });
-    await Promise.all(
-      list.map(([id]) => backend.remove([{ collection: collectionA, id }])),
-    );
-  };
-}
 
 function getParentPath(nested: boolean): DocumentPath {
   return nested ? [{ collection: collectionB, id: shortid() }] : [];
