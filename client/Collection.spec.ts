@@ -7,8 +7,8 @@ import { Unsubscribe } from './backend/Backend';
 import Collection from './Collection';
 import Document, { attribute, collection } from './Document';
 
-const CollectionA = 'nekord-test-a';
-const CollectionB = 'nekord-test-b';
+const CollectionA = 'nekosync-test-a';
+const CollectionB = 'nekosync-test-b';
 
 describe('Collection', () => {
   class DocumentA extends Document<{ a1: string; a2?: number }> {

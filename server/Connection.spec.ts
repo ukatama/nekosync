@@ -59,7 +59,7 @@ describe('Connection', () => {
     socket.emit(SocketUpstreamEvent.Request, {
       requestId,
       event: SocketRequestEvent.UnsubscribeCollection,
-      path: { parentPath: [], collection: 'nekord-test-a' },
+      path: { parentPath: [], collection: 'nekosync-test-a' },
     });
   });
 
@@ -68,29 +68,29 @@ describe('Connection', () => {
     socket.emit(SocketUpstreamEvent.Request, {
       requestId: shortid(),
       event: SocketRequestEvent.Update,
-      path: { parentPath: [], collection: 'nekord-test-a' },
+      path: { parentPath: [], collection: 'nekosync-test-a' },
       value: {},
     });
     socket.emit(SocketUpstreamEvent.Request, {
       requestId: shortid(),
       event: SocketRequestEvent.Update,
-      path: [{ collection: 'nekord-test-a', id: shortid() }],
+      path: [{ collection: 'nekosync-test-a', id: shortid() }],
     });
     socket.emit(SocketUpstreamEvent.Request, {
       requestId: shortid(),
       event: SocketRequestEvent.Add,
-      path: [{ collection: 'nekord-test-a', id: shortid() }],
+      path: [{ collection: 'nekosync-test-a', id: shortid() }],
       value: {},
     });
     socket.emit(SocketUpstreamEvent.Request, {
       requestId: shortid(),
       event: SocketRequestEvent.Add,
-      path: { parentPath: [], collection: 'nekord-test-a' },
+      path: { parentPath: [], collection: 'nekosync-test-a' },
     });
     socket.emit(SocketUpstreamEvent.Request, {
       requestId: shortid(),
       event: SocketRequestEvent.Remove,
-      path: { parentPath: [], collection: 'nekord-test-a' },
+      path: { parentPath: [], collection: 'nekosync-test-a' },
     });
   });
 

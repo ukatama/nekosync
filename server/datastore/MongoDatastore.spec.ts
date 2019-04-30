@@ -4,14 +4,14 @@ import MongoDatastore from './MongoDatastore';
 
 describe('MongoDatastore', () => {
   const id = shortid();
-  const collection = 'nekord-test-a';
+  const collection = 'nekosync-test-a';
 
   let mongoDatastore: MongoDatastore;
   it('can initialize', async () => {
     const mongoClient = await MongoClient.connect('mongodb://127.0.0.1:27017', {
       useNewUrlParser: true,
     });
-    const db = mongoClient.db('nekord');
+    const db = mongoClient.db('nekosync');
 
     after(async () => {
       await mongoClient.close();

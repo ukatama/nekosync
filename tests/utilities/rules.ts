@@ -3,7 +3,7 @@ import Rule from '../../common/Rule';
 
 const rules: Rule[] = [
   {
-    path: '/nekord-test-a/:id',
+    path: '/nekosync-test-a/:id',
     read: true,
     async write(path, params, reader) {
       await reader.list(getCollectionPath(path));
@@ -12,28 +12,28 @@ const rules: Rule[] = [
     },
   },
   {
-    path: '/nekord-test-b/:id',
+    path: '/nekosync-test-b/:id',
     read: true,
     write: true,
   },
   {
-    path: '/nekord-test-b/:id1/nekord-test-a/:id2',
+    path: '/nekosync-test-b/:id1/nekosync-test-a/:id2',
     read: true,
     write: true,
   },
   {
-    path: '/nekord-test-c/:id',
+    path: '/nekosync-test-c/:id',
     read: true,
     async write(path, params, reader) {
       const { id } = params;
       if (!id) return false;
-      const value = await reader.get([{ collection: 'nekord-test-d', id }]);
+      const value = await reader.get([{ collection: 'nekosync-test-d', id }]);
       const castedValue = value as { writable?: boolean } | undefined;
       return (castedValue && castedValue.writable) || false;
     },
   },
   {
-    path: '/nekord-test-d/:id',
+    path: '/nekosync-test-d/:id',
     read: true,
     write: true,
   },

@@ -1,5 +1,5 @@
 {
-  "name": "nekord",
+  "name": "nekosync",
   "version": "0.0.0",
   "description": "Real-time data store library supporting various backends.",
   "main": "index.js",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ukatama/nekord.git"
+    "url": "git+https://github.com/ukatama/nekosync.git"
   },
   "keywords": [
     "realtime",
@@ -18,9 +18,9 @@
   "author": "ukatama",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ukatama/nekord/issues"
+    "url": "https://github.com/ukatama/nekosync/issues"
   },
-  "homepage": "https://github.com/ukatama/nekord#readme",
+  "homepage": "https://github.com/ukatama/nekosync#readme",
   "dependencies": {
     "eventemitter3": "^3.1.0",
     "firebase": "^5.9.2",

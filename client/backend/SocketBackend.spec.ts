@@ -26,7 +26,7 @@ describe('SocketBackend', () => {
         resolve();
       });
       backend
-        .add({ parentPath: [], collection: 'nekord-test-a' }, { a: 2 })
+        .add({ parentPath: [], collection: 'nekosync-test-a' }, { a: 2 })
         .catch(e => {
           error = e;
         });

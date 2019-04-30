@@ -12,7 +12,7 @@ describe('SocketBackend with MongoDatastore', async () => {
   const mongoClient = await MongoClient.connect('mongodb://127.0.0.1:27017', {
     useNewUrlParser: true,
   });
-  const db = mongoClient.db('nekord');
+  const db = mongoClient.db('nekosync');
   const socketPair = new SocketPair();
   const datastore = new MongoDatastore(db);
   const eventBus = new EventEmitter();

@@ -1,19 +1,19 @@
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /nekord-test-a/{id} {
+    match /nekosync-test-a/{id} {
       allow read, write;
     }
-    match /nekord-test-b/{id} {
+    match /nekosync-test-b/{id} {
       allow read, write;
-      match /nekord-test-a/{id} {
+      match /nekosync-test-a/{id} {
         allow read, write;
       }
     }
-    match /nekord-test-c/{id} {
+    match /nekosync-test-c/{id} {
       allow read;
-      allow write: if get(/databases/$(database)/documents/nekord-test-d/$(id)).data.writable == true;
+      allow write: if get(/databases/$(database)/documents/nekosync-test-d/$(id)).data.writable == true;
     }
-    match /nekord-test-d/{id} {
+    match /nekosync-test-d/{id} {
       allow read, write;
     }
   }

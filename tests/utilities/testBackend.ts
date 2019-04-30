@@ -11,11 +11,11 @@ import {
   getDocumentPath,
 } from '../../common/Path';
 
-const collectionA = 'nekord-test-a';
-const collectionB = 'nekord-test-b';
-const collectionC = 'nekord-test-c';
-const collectionD = 'nekord-test-d';
-const collectionX = 'nekord-test-x';
+const collectionA = 'nekosync-test-a';
+const collectionB = 'nekosync-test-b';
+const collectionC = 'nekosync-test-c';
+const collectionD = 'nekosync-test-d';
+const collectionX = 'nekosync-test-x';
 
 function cleaner(backend: Backend, collection: string) {
   return async () => {
