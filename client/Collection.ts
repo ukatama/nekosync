@@ -7,11 +7,12 @@ import Document from './Document';
  */
 export default abstract class Collection<
   T extends object,
-  U extends object = object
+  D extends Document<T> = Document<T>,
+  P extends Document<{}> = Document<{}>
 > {
-  private _documents: Document<T>[] = [];
+  private _documents: D[] = [];
   public readonly backend: Backend;
-  public readonly parentDocument?: Document<U>;
+  public readonly parentDocument?: P;
 
   public abstract get name(): string;
 
@@ -20,7 +21,7 @@ export default abstract class Collection<
    * @param {Backend} backend - Instance of backend
    * @param {Document | undefined} parentDocument - Parent document
    */
-  public constructor(backend: Backend, parentDocument?: Document<U>) {
+  public constructor(backend: Backend, parentDocument?: P) {
     this.backend = backend;
     this.parentDocument = parentDocument;
   }
@@ -37,28 +38,38 @@ export default abstract class Collection<
   }
 
   /**
-   * List documents
-   * @return {Promise<Document<T>[]>} Documents
+   * Create document instance
+   * @param {string} id - ID
+   * @param {T | undefined} value - Value
+   * @return {D} Document
    */
-  public async list(): Promise<Document<T>[]> {
+  public createDocument(id: string, value?: T): D {
+    return new Document<T>(this, id, value) as D;
+  }
+
+  /**
+   * List documents
+   * @return {Promise<D[]>} Documents
+   */
+  public async list(): Promise<D[]> {
     const values = await this.backend.list(this.path);
-    return values.map(([id, value]) => new Document<T>(this, id, value as T));
+    return values.map(([id, value]) => this.createDocument(id, value as T));
   }
 
   /**
    * Add new document
    * @param {T} value - Value of new document
    */
-  public async add(value: T): Promise<Document<T>> {
+  public async add(value: T): Promise<D> {
     const id = await this.backend.add(this.path, value);
-    return new Document<T>(this, id, value);
+    return this.createDocument(id, value);
   }
 
   /**
    * Get documents subscribed
-   * @return {Document<T>[]} documents
+   * @return {D[]} documents
    */
-  public get documents(): Document<T>[] {
+  public get documents(): D[] {
     return this._documents;
   }
 
@@ -75,7 +86,7 @@ export default abstract class Collection<
         );
       } else {
         let exists = false;
-        const newDocument = new Document<T>(this, id, value as T);
+        const newDocument = this.createDocument(id, value as T);
         this._documents = this._documents.map(document => {
           if (document.id === id) {
             exists = true;

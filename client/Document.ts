@@ -6,7 +6,7 @@ import DocumentRemovedError from './DocumentRemovedError';
 /**
  * Document
  */
-export default class Document<T extends object> {
+export class DocumentBase<T extends object> {
   public readonly collection: Collection<T>;
   public readonly id: string;
   private _value: T | undefined;
@@ -15,7 +15,7 @@ export default class Document<T extends object> {
    * Constructor
    * @param {Collection} collection - Parent collection
    * @param {string} id - ID of document
-   * @param {T} value - Value of document
+   * @param {T | undefined} value - Value of document
    */
   public constructor(collection: Collection<T>, id: string, value?: T) {
     this.collection = collection;
@@ -38,11 +38,6 @@ export default class Document<T extends object> {
     if (this._value === undefined) throw new DocumentRemovedError();
     return this._value;
   }
-
-  /**
-   * Get value of document
-   * @param value G
-   */
 
   /**
    * Update document
@@ -69,5 +64,25 @@ export default class Document<T extends object> {
         this._value = value as T | undefined;
       },
     );
+  }
+}
+
+/**
+ * Document
+ */
+export default class Document<T extends object> extends DocumentBase<T> {
+  /**
+   * Update document
+   * @param {T} value - New value
+   */
+  public async update(value: Partial<T>): Promise<void> {
+    await this.collection.backend.update(this.path, value);
+  }
+
+  /**
+   * Remove document
+   */
+  public async remove(): Promise<void> {
+    await this.collection.backend.remove(this.path);
   }
 }

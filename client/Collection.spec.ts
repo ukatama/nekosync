@@ -1,7 +1,6 @@
 import Collection from './Collection';
 import MemoryBackend from './backend/MemoryBackend';
 import rules from '../tests/utilities/rules';
-import collectionCleaner from '../tests/utilities/collectionCleaner';
 import { assert } from 'chai';
 import Document from './Document';
 import { Unsubscribe } from './backend/Backend';
@@ -13,7 +12,7 @@ interface A {
 
 describe('Collection', () => {
   function test(nested: boolean) {
-    class CollectionA extends Collection<A, {}> {
+    class CollectionA extends Collection<A> {
       public get name(): string {
         return 'nekosync-test-a';
       }
@@ -31,13 +30,6 @@ describe('Collection', () => {
       collectionB = new CollectionB(backend);
       const parentDocument = nested ? await collectionB.add({}) : undefined;
       collectionA = new CollectionA(backend, parentDocument);
-    });
-
-    after(async () => {
-      await collectionCleaner(collectionA.backend, collectionA.name)();
-      if (nested) {
-        await collectionCleaner(collectionB.backend, collectionB.name)();
-      }
     });
 
     it('adds new document', async () => {
